@@ -9,6 +9,9 @@ the same high level API for working with Automerge documents and
 network peers. Development is at an early stage and the API should be
 considered unstable.
 
+Basic document persistence is available using `repo.FsStore`. See
+`cmd/example` for a minimal demonstration.
+
 ## Building
 
 This project uses Go modules. To download dependencies and build run:
