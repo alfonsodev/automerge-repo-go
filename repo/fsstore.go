@@ -7,6 +7,9 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
+
+	"github.com/google/uuid"
 )
 
 // FsStore persists documents to disk in a directory.
@@ -37,9 +40,34 @@ func (s *FsStore) Load(id DocumentID) (*Document, error) {
 		}
 		return nil, err
 	}
-	var data []byte
+	var data map[string]interface{}
 	if err := json.Unmarshal(b, &data); err != nil {
 		return nil, err
 	}
 	return &Document{ID: id, Data: data}, nil
+}
+
+// List returns all document IDs currently stored on disk.
+func (s *FsStore) List() ([]DocumentID, error) {
+	var ids []DocumentID
+	files, err := os.ReadDir(s.Dir)
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return ids, nil
+		}
+		return nil, err
+	}
+	for _, f := range files {
+		name := f.Name()
+		if !strings.HasSuffix(name, ".json") {
+			continue
+		}
+		idStr := strings.TrimSuffix(name, ".json")
+		id, err := uuid.Parse(idStr)
+		if err != nil {
+			continue
+		}
+		ids = append(ids, id)
+	}
+	return ids, nil
 }
