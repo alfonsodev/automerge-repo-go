@@ -1,5 +1,13 @@
-/target
-/test_utils/target
-Cargo.lock
+# Ignore artifacts from the rust reference implementation
+rust/target
+rust/test_utils/target
+rust/Cargo.lock
+
+# Editor directories
 .vim
 .zed/
+
+# Go build artifacts
+bin/
+*.exe
+
