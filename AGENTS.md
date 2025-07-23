@@ -42,3 +42,6 @@ several subsystems:
 ## Maintaining this file
 
 Whenever you make progress on the project, update the **Next steps** and **TODO** lists above. When you commit changes that complete an item, mark it as done with an `x` (e.g. `- [x]`). Add any new tasks or notes that future agents should be aware of. Keep this file concise and focused on actionable items.
+
+See [ROADMAP_PROGRESS.md](ROADMAP_PROGRESS.md) for a log of work completed on
+the production roadmap and notes on remaining tasks.
