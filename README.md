@@ -28,6 +28,23 @@ Available commands are:
 * `set <id> <key> <value>` - set a key/value pair in a document
 * `get <id> <key>` - print a value from a document
 
+### Networking example
+
+The program under `cmd/tcp-example` demonstrates establishing a networking
+handshake between peers. Run one instance in server mode:
+
+```bash
+go run ./cmd/tcp-example -listen :9999
+```
+
+And another in client mode connecting to it:
+
+```bash
+go run ./cmd/tcp-example -connect localhost:9999
+```
+
+Each side prints the remote repository ID once the handshake completes.
+
 ## Building
 
 This project uses Go modules. To download dependencies and build run:
