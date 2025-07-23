@@ -1,8 +1,10 @@
 package repo
 
 import (
-	"encoding/json"
 	"fmt"
+
+	"github.com/fxamacker/cbor/v2"
+	"github.com/google/uuid"
 )
 
 // RepoMessage represents a sync or ephemeral message exchanged between repositories.
@@ -15,44 +17,57 @@ type RepoMessage struct {
 	Message    []byte
 }
 
-// repoMessageJSON mirrors the on-the-wire JSON structure.
-type repoMessageJSON struct {
-	Type       string     `json:"type"`
-	SenderID   RepoID     `json:"senderId"`
-	TargetID   RepoID     `json:"targetId"`
-	DocumentID DocumentID `json:"documentId"`
-	Message    []byte     `json:"message"`
+// repoMessageCBOR mirrors the on-the-wire CBOR structure.
+// IDs are encoded as strings for compatibility with other implementations.
+type repoMessageCBOR struct {
+	Type       string `cbor:"type"`
+	SenderID   string `cbor:"senderId"`
+	TargetID   string `cbor:"targetId"`
+	DocumentID string `cbor:"documentId"`
+	Message    []byte `cbor:"message"`
 }
 
-// Encode converts the RepoMessage into JSON bytes for transmission.
+// Encode converts the RepoMessage into CBOR bytes for transmission.
 func (m RepoMessage) Encode() ([]byte, error) {
 	if m.Type != "sync" && m.Type != "ephemeral" {
 		return nil, fmt.Errorf("invalid RepoMessage type %q", m.Type)
 	}
-	wire := repoMessageJSON{
+	wire := repoMessageCBOR{
 		Type:       m.Type,
-		SenderID:   m.FromRepoID,
-		TargetID:   m.ToRepoID,
-		DocumentID: m.DocumentID,
+		SenderID:   m.FromRepoID.String(),
+		TargetID:   m.ToRepoID.String(),
+		DocumentID: m.DocumentID.String(),
 		Message:    m.Message,
 	}
-	return json.Marshal(wire)
+	return cbor.Marshal(wire)
 }
 
-// DecodeRepoMessage parses JSON data into a RepoMessage.
+// DecodeRepoMessage parses CBOR data into a RepoMessage.
 func DecodeRepoMessage(data []byte) (RepoMessage, error) {
-	var wire repoMessageJSON
-	if err := json.Unmarshal(data, &wire); err != nil {
+	var wire repoMessageCBOR
+	if err := cbor.Unmarshal(data, &wire); err != nil {
 		return RepoMessage{}, err
 	}
 	if wire.Type != "sync" && wire.Type != "ephemeral" {
 		return RepoMessage{}, fmt.Errorf("invalid RepoMessage type %q", wire.Type)
 	}
+	from, err := uuid.Parse(wire.SenderID)
+	if err != nil {
+		return RepoMessage{}, err
+	}
+	to, err := uuid.Parse(wire.TargetID)
+	if err != nil {
+		return RepoMessage{}, err
+	}
+	doc, err := uuid.Parse(wire.DocumentID)
+	if err != nil {
+		return RepoMessage{}, err
+	}
 	return RepoMessage{
 		Type:       wire.Type,
-		FromRepoID: wire.SenderID,
-		ToRepoID:   wire.TargetID,
-		DocumentID: wire.DocumentID,
+		FromRepoID: from,
+		ToRepoID:   to,
+		DocumentID: doc,
 		Message:    wire.Message,
 	}, nil
 }

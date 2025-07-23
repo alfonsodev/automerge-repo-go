@@ -49,9 +49,9 @@ After feature parity with the Rust code is reached, several additional steps are
 required to ship a stable Go library and CLI. These tasks focus on polishing the
 API, improving reliability and providing tooling for real world use:
 
-1. **CBOR message format** – replace the temporary JSON encoding with the
-   CBOR based protocol implemented in `rust/src/message.rs` so Go peers can
-   interoperate with other Automerge Repo implementations.
+- [x] **CBOR message format** – replace the temporary JSON encoding with the
+  CBOR based protocol implemented in `rust/src/message.rs` so Go peers can
+  interoperate with other Automerge Repo implementations.
 2. **Robust error handling** – audit the goroutine based sync loops and
    connectors to ensure failures are surfaced correctly and connections are
    cleaned up. Mirror the `ConnComplete` semantics from the Rust code.
