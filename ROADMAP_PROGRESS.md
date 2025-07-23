@@ -41,16 +41,18 @@ future development.
 - Updated `cmd/tcp-example` to use `RepoHandle` and connectors.
   - On connect or accept it performs the join/peer handshake and syncs all
     documents.
-  - Messages received are printed to stdout.
+  - Messages received are printed to stdout and a simple REPL allows editing a
+    document which syncs to all peers.
 - Added handling for send failures in `RepoHandle`.
   - `SendMessage` and `Broadcast` now emit `conn_error` and remove the peer when
     a send operation fails.
 - Configured GitHub Actions workflow `go.yml` for CI.
   - Runs `go vet` and `go test` on Linux, macOS and Windows.
+- Added package level documentation in `repo/doc.go` describing the main types
+  and how to use network connectors.
 
 ## Missing / Next Steps
-- Additional CLI features like editing documents over the network are still planned.
 - Document handles and reconnection logic remain to be implemented.
 - Review connection loops and continue improving error propagation similar to the Rust `ConnComplete` API.
-- Package level documentation and usage examples are still required.
+- More comprehensive usage examples would be helpful.
 - Versioned releases have not yet been prepared.

@@ -1,10 +1,13 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"net"
 	"os"
+	"strings"
+	"sync"
 
 	"github.com/example/automerge-repo-go/repo"
 )
@@ -23,6 +26,11 @@ func main() {
 	doc := handle.Repo.NewDoc()
 	_ = doc.Set("greeting", "hello")
 
+	var (
+		mu    sync.Mutex
+		peers []repo.RepoID
+	)
+
 	go func() {
 		for msg := range handle.Inbox {
 			fmt.Printf("received %s message for doc %s\n", msg.Type, msg.DocumentID)
@@ -36,24 +44,31 @@ func main() {
 			os.Exit(1)
 		}
 		fmt.Printf("listening on %s with repo %s\n", *listenAddr, handle.Repo.ID)
-		for {
-			conn, err := ln.Accept()
-			if err != nil {
-				fmt.Println("accept error:", err)
-				continue
-			}
-			go func(c net.Conn) {
-				lp, remote, err := repo.Connect(c, handle.Repo.ID, repo.Incoming)
+		go func() {
+			for {
+				conn, err := ln.Accept()
 				if err != nil {
-					fmt.Println("handshake error:", err)
-					c.Close()
-					return
+					fmt.Println("accept error:", err)
+					continue
 				}
-				handle.AddConn(remote, lp)
-				handle.SyncAll(remote)
-			}(conn)
-		}
-	} else if *connectAddr != "" {
+				go func(c net.Conn) {
+					lp, remote, err := repo.Connect(c, handle.Repo.ID, repo.Incoming)
+					if err != nil {
+						fmt.Println("handshake error:", err)
+						c.Close()
+						return
+					}
+					handle.AddConn(remote, lp)
+					mu.Lock()
+					peers = append(peers, remote)
+					mu.Unlock()
+					handle.SyncAll(remote)
+				}(conn)
+			}
+		}()
+	}
+
+	if *connectAddr != "" {
 		conn, err := net.Dial("tcp", *connectAddr)
 		if err != nil {
 			fmt.Println("dial error:", err)
@@ -65,6 +80,51 @@ func main() {
 			return
 		}
 		handle.AddConn(remote, lp)
+		mu.Lock()
+		peers = append(peers, remote)
+		mu.Unlock()
 		handle.SyncAll(remote)
+	}
+
+	scanner := bufio.NewScanner(os.Stdin)
+	fmt.Println("commands: set <key> <value>, get <key>, exit")
+	for {
+		fmt.Print("> ")
+		if !scanner.Scan() {
+			break
+		}
+		parts := strings.Fields(scanner.Text())
+		if len(parts) == 0 {
+			continue
+		}
+		switch parts[0] {
+		case "set":
+			if len(parts) != 3 {
+				fmt.Println("usage: set <key> <value>")
+				continue
+			}
+			if err := doc.Set(parts[1], parts[2]); err != nil {
+				fmt.Println("error:", err)
+				continue
+			}
+			mu.Lock()
+			localPeers := append([]repo.RepoID(nil), peers...)
+			mu.Unlock()
+			for _, p := range localPeers {
+				_ = handle.SyncDocument(p, doc.ID)
+			}
+		case "get":
+			if len(parts) != 2 {
+				fmt.Println("usage: get <key>")
+				continue
+			}
+			if v, ok := doc.Get(parts[1]); ok {
+				fmt.Println(v)
+			}
+		case "exit":
+			return
+		default:
+			fmt.Println("unknown command")
+		}
 	}
 }
