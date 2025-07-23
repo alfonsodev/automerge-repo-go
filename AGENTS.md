@@ -11,7 +11,7 @@ This repository contains a work-in-progress port of the Automerge Repo from Rust
 
 ## TODO
 
-- [ ] Implement Automerge document data type or integrate an existing library.
+- [x] Implement Automerge document data type or integrate an existing library.
 - [x] Persist repository data to disk using `FsStore`.
 - [x] Add tests for `repo.Repo` and `repo.FsStore`.
 - [ ] Prototype networking support based on the Rust implementation.

@@ -1,7 +1,6 @@
 package repo
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -9,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	automerge "github.com/automerge/automerge-go"
 	"github.com/google/uuid"
 )
 
@@ -22,17 +22,17 @@ func (s *FsStore) Save(doc *Document) error {
 	if err := os.MkdirAll(s.Dir, 0o755); err != nil {
 		return err
 	}
-	path := filepath.Join(s.Dir, fmt.Sprintf("%s.json", doc.ID))
-	data, err := json.Marshal(doc.Data)
-	if err != nil {
-		return err
+	path := filepath.Join(s.Dir, fmt.Sprintf("%s.automerge", doc.ID))
+	if doc.doc == nil {
+		doc.doc = automerge.New()
 	}
+	data := doc.doc.Save()
 	return os.WriteFile(path, data, 0o644)
 }
 
 // Load reads a document from disk.
 func (s *FsStore) Load(id DocumentID) (*Document, error) {
-	path := filepath.Join(s.Dir, fmt.Sprintf("%s.json", id))
+	path := filepath.Join(s.Dir, fmt.Sprintf("%s.automerge", id))
 	b, err := os.ReadFile(path)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
@@ -40,11 +40,11 @@ func (s *FsStore) Load(id DocumentID) (*Document, error) {
 		}
 		return nil, err
 	}
-	var data map[string]interface{}
-	if err := json.Unmarshal(b, &data); err != nil {
+	d, err := automerge.Load(b)
+	if err != nil {
 		return nil, err
 	}
-	return &Document{ID: id, Data: data}, nil
+	return &Document{ID: id, doc: d}, nil
 }
 
 // List returns all document IDs currently stored on disk.
@@ -59,10 +59,10 @@ func (s *FsStore) List() ([]DocumentID, error) {
 	}
 	for _, f := range files {
 		name := f.Name()
-		if !strings.HasSuffix(name, ".json") {
+		if !strings.HasSuffix(name, ".automerge") {
 			continue
 		}
-		idStr := strings.TrimSuffix(name, ".json")
+		idStr := strings.TrimSuffix(name, ".automerge")
 		id, err := uuid.Parse(idStr)
 		if err != nil {
 			continue

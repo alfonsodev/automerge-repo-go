@@ -9,8 +9,9 @@ the same high level API for working with Automerge documents and
 network peers. Development is at an early stage and the API should be
 considered unstable.
 
-Basic document persistence is available using `repo.FsStore`. See
-`cmd/example` for a minimal demonstration.
+Basic document persistence is available using `repo.FsStore` and documents
+internally use the [automerge-go](https://github.com/automerge/automerge-go)
+library. See `cmd/example` for a minimal demonstration.
 
 ## Building
 
