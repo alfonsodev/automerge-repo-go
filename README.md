@@ -11,7 +11,21 @@ considered unstable.
 
 Basic document persistence is available using `repo.FsStore` and documents
 internally use the [automerge-go](https://github.com/automerge/automerge-go)
-library. See `cmd/example` for a minimal demonstration.
+library. The program under `cmd/example` provides a small CLI for creating and
+editing documents stored on disk.
+
+Run it with:
+
+```bash
+go run ./cmd/example <command>
+```
+
+Available commands are:
+
+* `new` - create a new document and print its ID
+* `list` - list stored document IDs
+* `set <id> <key> <value>` - set a key/value pair in a document
+* `get <id> <key>` - print a value from a document
 
 ## Building
 

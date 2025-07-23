@@ -5,7 +5,7 @@ This repository contains a work-in-progress port of the Automerge Repo from Rust
 ## Next steps
 
 1. Flesh out the Go implementation so it matches the capabilities of the Rust repo. Networking layer still needs porting (see `rust/src/*.rs`).
-2. Expand the Go example under `cmd/example` into a minimal CLI demonstrating document creation, loading and storage using `repo.FsStore`.
+2. Expand the Go example under `cmd/example` into a minimal CLI demonstrating document creation, loading and storage using `repo.FsStore`. **(done)**
 3. Create unit tests for the Go code. Aim for similar coverage as the Rust tests in `rust/tests`. **(done)**
 4. Update the root `README.md` as new functionality becomes available.
 
