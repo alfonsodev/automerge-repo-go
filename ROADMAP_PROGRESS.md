@@ -21,8 +21,16 @@ future development.
   transmitting `RepoMessage` values.
   - Added unit tests `TestLPConnSendRecvMessage` and `TestWSConnSendRecvMessage`
     verifying JSON message exchange.
+- Introduced `RepoHandle` with basic peer management in `repo/handle.go`.
+  - Supports adding connections that forward incoming messages on a channel.
+  - Provides `SendMessage` and `Broadcast` helpers.
+  - Added unit test `TestRepoHandleMessageForwarding` using an in-memory connection.
 
 ## Missing / Next Steps
-- Connection lifecycle management and background goroutines similar to the
-  Rust `RepoHandle` implementation.
+- Connection lifecycle management remains incomplete and should evolve toward
+  the Rust `RepoHandle` design.
 - Integration of connectors with the example CLI for real networking.
+- Document synchronization logic is still missing; incoming messages are
+  delivered but not applied to documents.
+- CLI examples should be updated to use `RepoHandle` and demonstrate message
+  exchange over the network.

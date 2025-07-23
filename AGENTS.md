@@ -18,6 +18,7 @@ This repository contains a work-in-progress port of the Automerge Repo from Rust
 - [x] Port or rewrite example programs from `rust/examples` in Go.
 - [x] Integrate `RepoMessage` handling with connectors.
 - [ ] Implement `RepoHandle` style connection management and background sync.
+  - Basic connection handling implemented, but document sync logic still pending.
 
 ## Part 2: Roadmap to Production
 
