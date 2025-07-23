@@ -25,12 +25,16 @@ future development.
   - Supports adding connections that forward incoming messages on a channel.
   - Provides `SendMessage` and `Broadcast` helpers.
   - Added unit test `TestRepoHandleMessageForwarding` using an in-memory connection.
+- Added basic document synchronization via `RepoHandle.SyncDocument` and
+  `RepoHandle.SyncAll`.
+  - Documents use Automerge's sync protocol to exchange changes.
+  - Unit test `TestRepoHandleSync` verifies syncing between two handles.
+- Updated `cmd/tcp-example` to use `RepoHandle` and connectors.
+  - On connect or accept it performs the join/peer handshake and syncs all
+    documents.
+  - Messages received are printed to stdout.
 
 ## Missing / Next Steps
 - Connection lifecycle management remains incomplete and should evolve toward
   the Rust `RepoHandle` design.
-- Integration of connectors with the example CLI for real networking.
-- Document synchronization logic is still missing; incoming messages are
-  delivered but not applied to documents.
-- CLI examples should be updated to use `RepoHandle` and demonstrate message
-  exchange over the network.
+- Additional CLI features like editing documents over the network are still planned.

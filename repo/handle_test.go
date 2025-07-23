@@ -44,7 +44,7 @@ func TestRepoHandleMessageForwarding(t *testing.T) {
 	h1.AddConn(h2.Repo.ID, c1)
 	h2.AddConn(h1.Repo.ID, c2)
 
-	msg := RepoMessage{Type: "sync", FromRepoID: h1.Repo.ID, ToRepoID: h2.Repo.ID}
+	msg := RepoMessage{Type: "ephemeral", FromRepoID: h1.Repo.ID, ToRepoID: h2.Repo.ID}
 	if err := h1.SendMessage(h2.Repo.ID, msg); err != nil {
 		t.Fatalf("SendMessage error: %v", err)
 	}

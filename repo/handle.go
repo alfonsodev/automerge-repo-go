@@ -3,6 +3,8 @@ package repo
 import (
 	"fmt"
 	"sync"
+
+	automerge "github.com/automerge/automerge-go"
 )
 
 // Conn abstracts a bidirectional channel capable of sending and receiving
@@ -20,18 +22,23 @@ type RepoHandle struct {
 	Repo *Repo
 
 	mu    sync.Mutex
-	peers map[RepoID]Conn
+	peers map[RepoID]*peerInfo
 
 	// Inbox delivers messages received from peers. It is unbuffered so callers
 	// should read from it promptly.
 	Inbox chan RepoMessage
 }
 
+type peerInfo struct {
+	conn       Conn
+	syncStates map[DocumentID]*automerge.SyncState
+}
+
 // NewRepoHandle wraps r with connection management and returns the handle.
 func NewRepoHandle(r *Repo) *RepoHandle {
 	return &RepoHandle{
 		Repo:  r,
-		peers: make(map[RepoID]Conn),
+		peers: make(map[RepoID]*peerInfo),
 		Inbox: make(chan RepoMessage),
 	}
 }
@@ -41,9 +48,9 @@ func NewRepoHandle(r *Repo) *RepoHandle {
 func (h *RepoHandle) AddConn(remote RepoID, c Conn) {
 	h.mu.Lock()
 	if h.peers == nil {
-		h.peers = make(map[RepoID]Conn)
+		h.peers = make(map[RepoID]*peerInfo)
 	}
-	h.peers[remote] = c
+	h.peers[remote] = &peerInfo{conn: c, syncStates: make(map[DocumentID]*automerge.SyncState)}
 	h.mu.Unlock()
 
 	go h.readLoop(remote, c)
@@ -56,6 +63,10 @@ func (h *RepoHandle) readLoop(remote RepoID, c Conn) {
 		if err != nil {
 			break
 		}
+		if msg.Type == "sync" {
+			h.handleSyncMessage(remote, msg)
+			continue
+		}
 		h.Inbox <- msg
 	}
 	h.RemoveConn(remote)
@@ -64,26 +75,26 @@ func (h *RepoHandle) readLoop(remote RepoID, c Conn) {
 // RemoveConn closes and deletes the connection associated with the peer.
 func (h *RepoHandle) RemoveConn(remote RepoID) {
 	h.mu.Lock()
-	c, ok := h.peers[remote]
+	pi, ok := h.peers[remote]
 	if ok {
 		delete(h.peers, remote)
 	}
 	h.mu.Unlock()
 
 	if ok {
-		c.Close()
+		pi.conn.Close()
 	}
 }
 
 // SendMessage transmits msg to the specified remote peer if present.
 func (h *RepoHandle) SendMessage(remote RepoID, msg RepoMessage) error {
 	h.mu.Lock()
-	c, ok := h.peers[remote]
+	pi, ok := h.peers[remote]
 	h.mu.Unlock()
 	if !ok {
 		return fmt.Errorf("peer %s not found", remote)
 	}
-	return c.SendMessage(msg)
+	return pi.conn.SendMessage(msg)
 }
 
 // Broadcast sends msg to all connected peers. Errors are returned for the first
@@ -91,8 +102,8 @@ func (h *RepoHandle) SendMessage(remote RepoID, msg RepoMessage) error {
 func (h *RepoHandle) Broadcast(msg RepoMessage) error {
 	h.mu.Lock()
 	conns := make([]Conn, 0, len(h.peers))
-	for _, c := range h.peers {
-		conns = append(conns, c)
+	for _, pi := range h.peers {
+		conns = append(conns, pi.conn)
 	}
 	h.mu.Unlock()
 	for _, c := range conns {
@@ -107,10 +118,82 @@ func (h *RepoHandle) Broadcast(msg RepoMessage) error {
 func (h *RepoHandle) Close() {
 	h.mu.Lock()
 	conns := h.peers
-	h.peers = make(map[RepoID]Conn)
+	h.peers = make(map[RepoID]*peerInfo)
 	h.mu.Unlock()
-	for _, c := range conns {
-		c.Close()
+	for _, pi := range conns {
+		pi.conn.Close()
 	}
 	close(h.Inbox)
+}
+
+// SyncDocument exchanges sync messages for the given document with the remote peer.
+func (h *RepoHandle) SyncDocument(remote RepoID, docID DocumentID) error {
+	h.mu.Lock()
+	pi, ok := h.peers[remote]
+	doc, docOK := h.Repo.GetDoc(docID)
+	if ok && docOK {
+		state := pi.syncStates[docID]
+		if state == nil {
+			state = doc.NewSyncState()
+			pi.syncStates[docID] = state
+		}
+		h.mu.Unlock()
+		for {
+			data, valid := doc.GenerateSyncMessage(state)
+			if !valid {
+				break
+			}
+			msg := RepoMessage{Type: "sync", FromRepoID: h.Repo.ID, ToRepoID: remote, DocumentID: docID, Message: data}
+			if err := pi.conn.SendMessage(msg); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+	h.mu.Unlock()
+	if !ok {
+		return fmt.Errorf("peer %s not found", remote)
+	}
+	return fmt.Errorf("document %s not found", docID)
+}
+
+// handleSyncMessage applies a sync message from a peer and responds with any updates.
+func (h *RepoHandle) handleSyncMessage(remote RepoID, msg RepoMessage) {
+	h.mu.Lock()
+	pi, ok := h.peers[remote]
+	if !ok {
+		h.mu.Unlock()
+		return
+	}
+	doc, docOK := h.Repo.GetDoc(msg.DocumentID)
+	if !docOK {
+		// create empty document if not present
+		doc = &Document{ID: msg.DocumentID, doc: automerge.New()}
+		h.Repo.docs[msg.DocumentID] = doc
+	}
+	state := pi.syncStates[msg.DocumentID]
+	if state == nil {
+		state = doc.NewSyncState()
+		pi.syncStates[msg.DocumentID] = state
+	}
+	h.mu.Unlock()
+
+	_ = doc.ReceiveSyncMessage(state, msg.Message)
+	_ = h.SyncDocument(remote, msg.DocumentID)
+}
+
+// SyncAll sends sync messages for all documents to the remote peer.
+func (h *RepoHandle) SyncAll(remote RepoID) error {
+	h.mu.Lock()
+	ids := make([]DocumentID, 0, len(h.Repo.docs))
+	for id := range h.Repo.docs {
+		ids = append(ids, id)
+	}
+	h.mu.Unlock()
+	for _, id := range ids {
+		if err := h.SyncDocument(remote, id); err != nil {
+			return err
+		}
+	}
+	return nil
 }
