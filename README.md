@@ -45,6 +45,11 @@ go run ./cmd/tcp-example -connect localhost:9999
 
 Each side prints the remote repository ID once the handshake completes.
 
+WebSocket connections are supported via `repo.DialWebSocket` and
+`repo.AcceptWebSocket`. They use the same join/peer handshake over a WebSocket
+upgrade so repositories can communicate through standard HTTP servers or
+browsers.
+
 ## Building
 
 This project uses Go modules. To download dependencies and build run:
