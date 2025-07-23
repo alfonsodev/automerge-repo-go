@@ -7,6 +7,17 @@ import (
 	automerge "github.com/automerge/automerge-go"
 )
 
+// HandleEvent represents a peer connection lifecycle event emitted by RepoHandle.
+type HandleEvent struct {
+	Type string
+	Peer RepoID
+}
+
+const (
+	EventPeerConnected    = "peer_connected"
+	EventPeerDisconnected = "peer_disconnected"
+)
+
 // Conn abstracts a bidirectional channel capable of sending and receiving
 // RepoMessage values. LPConn and WSConn satisfy this interface.
 type Conn interface {
@@ -27,6 +38,10 @@ type RepoHandle struct {
 	// Inbox delivers messages received from peers. It is unbuffered so callers
 	// should read from it promptly.
 	Inbox chan RepoMessage
+
+	// Events publishes connection lifecycle notifications such as when peers
+	// connect or disconnect.
+	Events chan HandleEvent
 }
 
 type peerInfo struct {
@@ -37,9 +52,10 @@ type peerInfo struct {
 // NewRepoHandle wraps r with connection management and returns the handle.
 func NewRepoHandle(r *Repo) *RepoHandle {
 	return &RepoHandle{
-		Repo:  r,
-		peers: make(map[RepoID]*peerInfo),
-		Inbox: make(chan RepoMessage),
+		Repo:   r,
+		peers:  make(map[RepoID]*peerInfo),
+		Inbox:  make(chan RepoMessage),
+		Events: make(chan HandleEvent, 8),
 	}
 }
 
@@ -54,6 +70,9 @@ func (h *RepoHandle) AddConn(remote RepoID, c Conn) {
 	h.mu.Unlock()
 
 	go h.readLoop(remote, c)
+	if h.Events != nil {
+		h.Events <- HandleEvent{Type: EventPeerConnected, Peer: remote}
+	}
 }
 
 // readLoop continuously receives messages from c and publishes them to Inbox.
@@ -83,6 +102,9 @@ func (h *RepoHandle) RemoveConn(remote RepoID) {
 
 	if ok {
 		pi.conn.Close()
+		if h.Events != nil {
+			h.Events <- HandleEvent{Type: EventPeerDisconnected, Peer: remote}
+		}
 	}
 }
 
@@ -124,6 +146,9 @@ func (h *RepoHandle) Close() {
 		pi.conn.Close()
 	}
 	close(h.Inbox)
+	if h.Events != nil {
+		close(h.Events)
+	}
 }
 
 // SyncDocument exchanges sync messages for the given document with the remote peer.

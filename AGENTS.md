@@ -19,6 +19,7 @@ This repository contains a work-in-progress port of the Automerge Repo from Rust
 - [x] Integrate `RepoMessage` handling with connectors.
 - [x] Implement `RepoHandle` style connection management and background sync.
   - Basic document sync added via Automerge's sync protocol.
+- [x] Add connection lifecycle events via `RepoHandle.Events` channel.
 
 ## Part 2: Roadmap to Production
 

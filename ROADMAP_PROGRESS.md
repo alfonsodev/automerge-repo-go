@@ -29,12 +29,14 @@ future development.
   `RepoHandle.SyncAll`.
   - Documents use Automerge's sync protocol to exchange changes.
   - Unit test `TestRepoHandleSync` verifies syncing between two handles.
+- Added connection lifecycle events via `RepoHandle.Events`.
+  - Supports `peer_connected` and `peer_disconnected` notifications.
+  - Unit test `TestRepoHandleConnectionEvents` verifies event delivery.
 - Updated `cmd/tcp-example` to use `RepoHandle` and connectors.
   - On connect or accept it performs the join/peer handshake and syncs all
     documents.
   - Messages received are printed to stdout.
 
 ## Missing / Next Steps
-- Connection lifecycle management remains incomplete and should evolve toward
-  the Rust `RepoHandle` design.
 - Additional CLI features like editing documents over the network are still planned.
+- Document handles and reconnection logic remain to be implemented.
