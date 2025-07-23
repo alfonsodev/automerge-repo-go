@@ -43,6 +43,25 @@ several subsystems:
 7. **CLI updates** – extend `cmd` examples to demonstrate network sync and
    expose configuration flags for storage paths and ports.
 
+## Part 3: Production readiness checklist
+
+After feature parity with the Rust code is reached, several additional steps are
+required to ship a stable Go library and CLI. These tasks focus on polishing the
+API, improving reliability and providing tooling for real world use:
+
+1. **CBOR message format** – replace the temporary JSON encoding with the
+   CBOR based protocol implemented in `rust/src/message.rs` so Go peers can
+   interoperate with other Automerge Repo implementations.
+2. **Robust error handling** – audit the goroutine based sync loops and
+   connectors to ensure failures are surfaced correctly and connections are
+   cleaned up. Mirror the `ConnComplete` semantics from the Rust code.
+3. **Documentation & examples** – write package level docs and expand the CLI
+   programs to demonstrate document sharing across multiple peers.
+4. **Continuous integration** – configure a CI workflow that builds and runs
+   tests on Linux, macOS and Windows. Include `go vet` and coverage reporting.
+5. **Versioned releases** – once the API stabilises, tag releases and provide
+   instructions for importing via Go modules.
+
 ## Maintaining this file
 
 Whenever you make progress on the project, update the **Next steps** and **TODO** lists above. When you commit changes that complete an item, mark it as done with an `x` (e.g. `- [x]`). Add any new tasks or notes that future agents should be aware of. Keep this file concise and focused on actionable items.
