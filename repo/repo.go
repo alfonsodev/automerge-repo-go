@@ -3,6 +3,7 @@ package repo
 import (
 	"fmt"
 
+	automerge "github.com/automerge/automerge-go"
 	"github.com/google/uuid"
 )
 
@@ -14,22 +15,32 @@ type RepoID = uuid.UUID
 
 // Document represents a single Automerge document.
 type Document struct {
-	ID   DocumentID
-	Data map[string]interface{}
+	ID  DocumentID
+	doc *automerge.Doc
 }
 
 // Set assigns a value in the document.
-func (d *Document) Set(key string, value interface{}) {
-	if d.Data == nil {
-		d.Data = make(map[string]interface{})
+func (d *Document) Set(key string, value interface{}) error {
+	if d.doc == nil {
+		d.doc = automerge.New()
 	}
-	d.Data[key] = value
+	if err := d.doc.RootMap().Set(key, value); err != nil {
+		return err
+	}
+	_, err := d.doc.Commit("set")
+	return err
 }
 
 // Get retrieves a value from the document.
 func (d *Document) Get(key string) (interface{}, bool) {
-	v, ok := d.Data[key]
-	return v, ok
+	if d.doc == nil {
+		return nil, false
+	}
+	v, err := automerge.As[interface{}](d.doc.RootMap().Get(key))
+	if err != nil {
+		return nil, false
+	}
+	return v, true
 }
 
 // Repo holds a collection of documents.
@@ -53,7 +64,7 @@ func NewWithStore(store *FsStore) *Repo {
 
 // NewDoc creates a new document within the repository and returns it.
 func (r *Repo) NewDoc() *Document {
-	doc := &Document{ID: uuid.New(), Data: make(map[string]interface{})}
+	doc := &Document{ID: uuid.New(), doc: automerge.New()}
 	r.docs[doc.ID] = doc
 	return doc
 }

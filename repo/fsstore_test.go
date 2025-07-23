@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	automerge "github.com/automerge/automerge-go"
 	"github.com/google/uuid"
 )
 
@@ -13,13 +14,16 @@ func TestFsStoreSaveLoadList(t *testing.T) {
 	store := &FsStore{Dir: dir}
 
 	// create document
-	doc := &Document{ID: uuid.New(), Data: map[string]interface{}{"foo": "bar"}}
+	doc := &Document{ID: uuid.New(), doc: automerge.New()}
+	if err := doc.Set("foo", "bar"); err != nil {
+		t.Fatalf("Set failed: %v", err)
+	}
 	if err := store.Save(doc); err != nil {
 		t.Fatalf("Save failed: %v", err)
 	}
 
 	// file should exist
-	path := filepath.Join(dir, doc.ID.String()+".json")
+	path := filepath.Join(dir, doc.ID.String()+".automerge")
 	if _, err := os.Stat(path); err != nil {
 		t.Fatalf("expected file %s to exist: %v", path, err)
 	}
@@ -29,8 +33,8 @@ func TestFsStoreSaveLoadList(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Load failed: %v", err)
 	}
-	if v, ok := loaded.Data["foo"]; !ok || v != "bar" {
-		t.Fatalf("unexpected loaded data: %v", loaded.Data)
+	if v, ok := loaded.Get("foo"); !ok || v != "bar" {
+		t.Fatalf("unexpected loaded data: %v", v)
 	}
 
 	// list ids

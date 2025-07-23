@@ -10,7 +10,9 @@ func TestRepoSaveLoadDoc(t *testing.T) {
 	r := NewWithStore(store)
 
 	doc := r.NewDoc()
-	doc.Set("name", "Alice")
+	if err := doc.Set("name", "Alice"); err != nil {
+		t.Fatalf("Set failed: %v", err)
+	}
 
 	if err := r.SaveDoc(doc.ID); err != nil {
 		t.Fatalf("SaveDoc failed: %v", err)

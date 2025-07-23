@@ -11,7 +11,9 @@ func main() {
 	r := repo.NewWithStore(store)
 
 	doc := r.NewDoc()
-	doc.Set("greeting", "hello")
+	if err := doc.Set("greeting", "hello"); err != nil {
+		panic(err)
+	}
 	if err := r.SaveDoc(doc.ID); err != nil {
 		panic(err)
 	}
