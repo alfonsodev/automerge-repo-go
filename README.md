@@ -7,8 +7,8 @@ been moved to the `rust/` directory for reference.
 The goal of this port is to provide a Go implementation that offers
 the same high level API for working with Automerge documents and
 network peers. Development is at an early stage and the API should be
-considered unstable. A prototype networking handshake is now
-available via `repo.Handshake`.
+considered unstable. A prototype networking handshake using CBOR
+encoding is now available via `repo.Handshake`.
 
 Basic document persistence is available using `repo.FsStore` and documents
 internally use the [automerge-go](https://github.com/automerge/automerge-go)
@@ -44,6 +44,9 @@ go run ./cmd/tcp-example -connect localhost:9999
 ```
 
 Each side prints the remote repository ID once the handshake completes.
+
+Messages and handshake data are encoded using CBOR for compatibility with
+other Automerge Repo implementations.
 
 WebSocket connections are supported via `repo.DialWebSocket` and
 `repo.AcceptWebSocket`. They use the same join/peer handshake over a WebSocket

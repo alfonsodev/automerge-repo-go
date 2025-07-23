@@ -33,6 +33,11 @@ future development.
 - Added connection lifecycle events via `RepoHandle.Events`.
   - Supports `peer_connected` and `peer_disconnected` notifications.
   - Unit test `TestRepoHandleConnectionEvents` verifies event delivery.
+- Switched handshake messages to CBOR encoding across network helpers.
+  - `LPConn`, `WSConn` and the `Handshake` function now use CBOR.
+  - Added unit test `TestRepoHandleConnErrorEvent` exercising connection error events.
+- Introduced connection error events.
+  - `RepoHandle` publishes `conn_error` when a connection closes unexpectedly.
 - Updated `cmd/tcp-example` to use `RepoHandle` and connectors.
   - On connect or accept it performs the join/peer handshake and syncs all
     documents.
@@ -41,5 +46,4 @@ future development.
 ## Missing / Next Steps
 - Additional CLI features like editing documents over the network are still planned.
 - Document handles and reconnection logic remain to be implemented.
-- Handshake messages still use JSON; convert them to CBOR for full interoperability.
-- Review connection loops and add error propagation similar to the Rust `ConnComplete` API.
+- Review connection loops and continue improving error propagation similar to the Rust `ConnComplete` API.

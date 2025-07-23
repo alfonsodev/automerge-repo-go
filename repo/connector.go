@@ -2,14 +2,16 @@ package repo
 
 import (
 	"encoding/binary"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net"
 	"sync"
+
+	"github.com/fxamacker/cbor/v2"
+	"github.com/google/uuid"
 )
 
-// LPConn wraps a connection and exchanges length-prefixed JSON messages.
+// LPConn wraps a connection and exchanges length-prefixed CBOR messages.
 type LPConn struct {
 	rw io.ReadWriteCloser
 	mu sync.Mutex
@@ -20,9 +22,9 @@ func NewLPConn(rw io.ReadWriteCloser) *LPConn {
 	return &LPConn{rw: rw}
 }
 
-// Send encodes v as JSON and writes it with a 4 byte length prefix.
+// Send encodes v as CBOR and writes it with a 4 byte length prefix.
 func (c *LPConn) Send(v interface{}) error {
-	data, err := json.Marshal(v)
+	data, err := cbor.Marshal(v)
 	if err != nil {
 		return err
 	}
@@ -37,7 +39,7 @@ func (c *LPConn) Send(v interface{}) error {
 	return err
 }
 
-// Recv reads a length prefixed JSON message into v.
+// Recv reads a length prefixed CBOR message into v.
 func (c *LPConn) Recv(v interface{}) error {
 	var lenBuf [4]byte
 	if _, err := io.ReadFull(c.rw, lenBuf[:]); err != nil {
@@ -48,10 +50,10 @@ func (c *LPConn) Recv(v interface{}) error {
 	if _, err := io.ReadFull(c.rw, data); err != nil {
 		return err
 	}
-	return json.Unmarshal(data, v)
+	return cbor.Unmarshal(data, v)
 }
 
-// SendMessage writes a RepoMessage using length-prefixed JSON encoding.
+// SendMessage writes a RepoMessage using length-prefixed CBOR encoding.
 func (c *LPConn) SendMessage(msg RepoMessage) error {
 	data, err := msg.Encode()
 	if err != nil {
@@ -91,7 +93,7 @@ func Connect(conn net.Conn, id RepoID, dir ConnDirection) (*LPConn, RepoID, erro
 	lp := NewLPConn(conn)
 	switch dir {
 	case Outgoing:
-		if err := lp.Send(handshakeMessage{Type: "join", SenderID: id}); err != nil {
+		if err := lp.Send(handshakeMessage{Type: "join", SenderID: id.String()}); err != nil {
 			return nil, RepoID{}, err
 		}
 		var resp handshakeMessage
@@ -101,7 +103,11 @@ func Connect(conn net.Conn, id RepoID, dir ConnDirection) (*LPConn, RepoID, erro
 		if resp.Type != "peer" {
 			return nil, RepoID{}, fmt.Errorf("unexpected message %q", resp.Type)
 		}
-		return lp, resp.SenderID, nil
+		remote, err := uuid.Parse(resp.SenderID)
+		if err != nil {
+			return nil, RepoID{}, err
+		}
+		return lp, remote, nil
 	case Incoming:
 		var req handshakeMessage
 		if err := lp.Recv(&req); err != nil {
@@ -110,10 +116,14 @@ func Connect(conn net.Conn, id RepoID, dir ConnDirection) (*LPConn, RepoID, erro
 		if req.Type != "join" {
 			return nil, RepoID{}, fmt.Errorf("unexpected message %q", req.Type)
 		}
-		if err := lp.Send(handshakeMessage{Type: "peer", SenderID: id}); err != nil {
+		if err := lp.Send(handshakeMessage{Type: "peer", SenderID: id.String()}); err != nil {
 			return nil, RepoID{}, err
 		}
-		return lp, req.SenderID, nil
+		remote, err := uuid.Parse(req.SenderID)
+		if err != nil {
+			return nil, RepoID{}, err
+		}
+		return lp, remote, nil
 	default:
 		return nil, RepoID{}, fmt.Errorf("invalid direction")
 	}

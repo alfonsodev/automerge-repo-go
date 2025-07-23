@@ -11,11 +11,13 @@ import (
 type HandleEvent struct {
 	Type string
 	Peer RepoID
+	Err  error
 }
 
 const (
 	EventPeerConnected    = "peer_connected"
 	EventPeerDisconnected = "peer_disconnected"
+	EventConnError        = "conn_error"
 )
 
 // Conn abstracts a bidirectional channel capable of sending and receiving
@@ -44,6 +46,14 @@ type RepoHandle struct {
 	Events chan HandleEvent
 }
 
+func (h *RepoHandle) emitEvent(e HandleEvent) {
+	if h.Events == nil {
+		return
+	}
+	defer func() { recover() }()
+	h.Events <- e
+}
+
 type peerInfo struct {
 	conn       Conn
 	syncStates map[DocumentID]*automerge.SyncState
@@ -70,9 +80,7 @@ func (h *RepoHandle) AddConn(remote RepoID, c Conn) {
 	h.mu.Unlock()
 
 	go h.readLoop(remote, c)
-	if h.Events != nil {
-		h.Events <- HandleEvent{Type: EventPeerConnected, Peer: remote}
-	}
+	h.emitEvent(HandleEvent{Type: EventPeerConnected, Peer: remote})
 }
 
 // readLoop continuously receives messages from c and publishes them to Inbox.
@@ -80,6 +88,7 @@ func (h *RepoHandle) readLoop(remote RepoID, c Conn) {
 	for {
 		msg, err := c.RecvMessage()
 		if err != nil {
+			h.emitEvent(HandleEvent{Type: EventConnError, Peer: remote, Err: err})
 			break
 		}
 		if msg.Type == "sync" {
@@ -102,9 +111,7 @@ func (h *RepoHandle) RemoveConn(remote RepoID) {
 
 	if ok {
 		pi.conn.Close()
-		if h.Events != nil {
-			h.Events <- HandleEvent{Type: EventPeerDisconnected, Peer: remote}
-		}
+		h.emitEvent(HandleEvent{Type: EventPeerDisconnected, Peer: remote})
 	}
 }
 
