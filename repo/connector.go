@@ -51,6 +51,37 @@ func (c *LPConn) Recv(v interface{}) error {
 	return json.Unmarshal(data, v)
 }
 
+// SendMessage writes a RepoMessage using length-prefixed JSON encoding.
+func (c *LPConn) SendMessage(msg RepoMessage) error {
+	data, err := msg.Encode()
+	if err != nil {
+		return err
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	var lenBuf [4]byte
+	binary.BigEndian.PutUint32(lenBuf[:], uint32(len(data)))
+	if _, err := c.rw.Write(lenBuf[:]); err != nil {
+		return err
+	}
+	_, err = c.rw.Write(data)
+	return err
+}
+
+// RecvMessage reads a RepoMessage that was sent using SendMessage.
+func (c *LPConn) RecvMessage() (RepoMessage, error) {
+	var lenBuf [4]byte
+	if _, err := io.ReadFull(c.rw, lenBuf[:]); err != nil {
+		return RepoMessage{}, err
+	}
+	n := binary.BigEndian.Uint32(lenBuf[:])
+	data := make([]byte, n)
+	if _, err := io.ReadFull(c.rw, data); err != nil {
+		return RepoMessage{}, err
+	}
+	return DecodeRepoMessage(data)
+}
+
 // Close closes the underlying connection.
 func (c *LPConn) Close() error { return c.rw.Close() }
 

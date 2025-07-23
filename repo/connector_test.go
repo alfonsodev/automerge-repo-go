@@ -3,6 +3,8 @@ package repo
 import (
 	"net"
 	"testing"
+
+	"github.com/google/uuid"
 )
 
 func TestConnect(t *testing.T) {
@@ -33,6 +35,36 @@ func TestConnect(t *testing.T) {
 	}
 	if remote1 != repo2.ID || remote2 != repo1.ID {
 		t.Fatalf("unexpected repo IDs: %v %v", remote1, remote2)
+	}
+	lp1.Close()
+	lp2.Close()
+}
+
+func TestLPConnSendRecvMessage(t *testing.T) {
+	c1, c2 := net.Pipe()
+	lp1 := NewLPConn(c1)
+	lp2 := NewLPConn(c2)
+
+	msg := RepoMessage{
+		Type:       "sync",
+		FromRepoID: New().ID,
+		ToRepoID:   New().ID,
+		DocumentID: uuid.New(),
+		Message:    []byte("hi"),
+	}
+
+	go func() {
+		if err := lp1.SendMessage(msg); err != nil {
+			t.Errorf("send error: %v", err)
+		}
+	}()
+
+	got, err := lp2.RecvMessage()
+	if err != nil {
+		t.Fatalf("recv error: %v", err)
+	}
+	if got.Type != msg.Type || got.FromRepoID != msg.FromRepoID || got.ToRepoID != msg.ToRepoID || got.DocumentID != msg.DocumentID || string(got.Message) != string(msg.Message) {
+		t.Fatalf("mismatch: %#v vs %#v", got, msg)
 	}
 	lp1.Close()
 	lp2.Close()
