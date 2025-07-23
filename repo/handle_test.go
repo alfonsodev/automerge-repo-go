@@ -1,6 +1,7 @@
 package repo
 
 import (
+	"fmt"
 	"io"
 	"testing"
 	"time"
@@ -11,6 +12,27 @@ type mockConn struct {
 	sendCh chan RepoMessage
 	recvCh chan RepoMessage
 }
+
+// sendErrConn fails on SendMessage but otherwise behaves like an idle connection.
+type sendErrConn struct {
+	recvCh chan RepoMessage
+}
+
+func newSendErrConn() *sendErrConn {
+	return &sendErrConn{recvCh: make(chan RepoMessage)}
+}
+
+func (c *sendErrConn) SendMessage(m RepoMessage) error { return fmt.Errorf("send fail") }
+
+func (c *sendErrConn) RecvMessage() (RepoMessage, error) {
+	msg, ok := <-c.recvCh
+	if !ok {
+		return RepoMessage{}, io.EOF
+	}
+	return msg, nil
+}
+
+func (c *sendErrConn) Close() error { close(c.recvCh); return nil }
 
 func newMockConn() (*mockConn, *mockConn) {
 	c1 := &mockConn{sendCh: make(chan RepoMessage, 1), recvCh: make(chan RepoMessage, 1)}
@@ -60,4 +82,33 @@ func TestRepoHandleMessageForwarding(t *testing.T) {
 
 	h1.Close()
 	h2.Close()
+}
+
+func TestRepoHandleSendErrorEvent(t *testing.T) {
+	h := NewRepoHandle(New())
+	remoteID := New().ID
+
+	c := newSendErrConn()
+	h.AddConn(remoteID, c)
+
+	if evt := <-h.Events; evt.Type != EventPeerConnected || evt.Peer != remoteID {
+		t.Fatalf("expected peer connected event, got %#v", evt)
+	}
+
+	msg := RepoMessage{Type: "ephemeral", FromRepoID: h.Repo.ID, ToRepoID: remoteID}
+	if err := h.SendMessage(remoteID, msg); err == nil {
+		t.Fatal("expected send error")
+	}
+
+	evt := <-h.Events
+	if evt.Type != EventConnError || evt.Peer != remoteID {
+		t.Fatalf("expected conn error event, got %#v", evt)
+	}
+
+	evt = <-h.Events
+	if evt.Type != EventPeerDisconnected || evt.Peer != remoteID {
+		t.Fatalf("expected peer disconnected event, got %#v", evt)
+	}
+
+	h.Close()
 }

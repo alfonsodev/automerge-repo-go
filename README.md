@@ -69,3 +69,9 @@ Tests can be executed with:
 go test ./...
 ```
 
+## Continuous Integration
+
+All pushes and pull requests are validated by a GitHub Actions workflow defined
+in `.github/workflows/go.yml`. The workflow runs `go vet` and `go test` on
+Linux, macOS and Windows using the latest Go releases.
+
