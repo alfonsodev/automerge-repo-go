@@ -2,10 +2,12 @@ package repo
 
 import (
 	"bufio"
-	"encoding/json"
 	"fmt"
 	"io"
 	"sync"
+
+	"github.com/fxamacker/cbor/v2"
+	"github.com/google/uuid"
 )
 
 // ConnDirection indicates if we initiated a connection or accepted one.
@@ -17,18 +19,18 @@ const (
 )
 
 type handshakeMessage struct {
-	Type     string `json:"type"`
-	SenderID RepoID `json:"senderId"`
+	Type     string `cbor:"type"`
+	SenderID string `cbor:"senderId"`
 }
 
 // Handshake performs a simple join/peer handshake over the given connection.
 // It returns the remote repository ID after the handshake completes.
 func Handshake(rw io.ReadWriter, id RepoID, dir ConnDirection) (RepoID, error) {
-	enc := json.NewEncoder(rw)
-	dec := json.NewDecoder(bufio.NewReader(rw))
+	enc := cbor.NewEncoder(rw)
+	dec := cbor.NewDecoder(bufio.NewReader(rw))
 	switch dir {
 	case Outgoing:
-		if err := enc.Encode(handshakeMessage{Type: "join", SenderID: id}); err != nil {
+		if err := enc.Encode(handshakeMessage{Type: "join", SenderID: id.String()}); err != nil {
 			return RepoID{}, err
 		}
 		var resp handshakeMessage
@@ -38,7 +40,11 @@ func Handshake(rw io.ReadWriter, id RepoID, dir ConnDirection) (RepoID, error) {
 		if resp.Type != "peer" {
 			return RepoID{}, fmt.Errorf("unexpected message %q", resp.Type)
 		}
-		return resp.SenderID, nil
+		remote, err := uuid.Parse(resp.SenderID)
+		if err != nil {
+			return RepoID{}, err
+		}
+		return remote, nil
 	case Incoming:
 		var req handshakeMessage
 		if err := dec.Decode(&req); err != nil {
@@ -47,10 +53,14 @@ func Handshake(rw io.ReadWriter, id RepoID, dir ConnDirection) (RepoID, error) {
 		if req.Type != "join" {
 			return RepoID{}, fmt.Errorf("unexpected message %q", req.Type)
 		}
-		if err := enc.Encode(handshakeMessage{Type: "peer", SenderID: id}); err != nil {
+		if err := enc.Encode(handshakeMessage{Type: "peer", SenderID: id.String()}); err != nil {
 			return RepoID{}, err
 		}
-		return req.SenderID, nil
+		remote, err := uuid.Parse(req.SenderID)
+		if err != nil {
+			return RepoID{}, err
+		}
+		return remote, nil
 	default:
 		return RepoID{}, fmt.Errorf("invalid direction")
 	}

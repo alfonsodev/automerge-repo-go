@@ -6,10 +6,12 @@ import (
 	"net/url"
 	"sync"
 
+	"github.com/fxamacker/cbor/v2"
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 )
 
-// WSConn wraps a websocket connection for sending JSON messages.
+// WSConn wraps a websocket connection for sending CBOR messages.
 type WSConn struct {
 	c  *websocket.Conn
 	mu sync.Mutex
@@ -20,19 +22,27 @@ func NewWSConn(c *websocket.Conn) *WSConn {
 	return &WSConn{c: c}
 }
 
-// Send encodes v as JSON and writes it over the websocket.
+// Send encodes v as CBOR and writes it over the websocket.
 func (c *WSConn) Send(v interface{}) error {
+	data, err := cbor.Marshal(v)
+	if err != nil {
+		return err
+	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	return c.c.WriteJSON(v)
+	return c.c.WriteMessage(websocket.BinaryMessage, data)
 }
 
-// Recv reads a JSON message into v.
+// Recv reads a CBOR message into v.
 func (c *WSConn) Recv(v interface{}) error {
-	return c.c.ReadJSON(v)
+	_, data, err := c.c.ReadMessage()
+	if err != nil {
+		return err
+	}
+	return cbor.Unmarshal(data, v)
 }
 
-// SendMessage sends a RepoMessage as JSON over the websocket.
+// SendMessage sends a RepoMessage as CBOR over the websocket.
 func (c *WSConn) SendMessage(msg RepoMessage) error {
 	data, err := msg.Encode()
 	if err != nil {
@@ -40,7 +50,7 @@ func (c *WSConn) SendMessage(msg RepoMessage) error {
 	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	return c.c.WriteMessage(websocket.TextMessage, data)
+	return c.c.WriteMessage(websocket.BinaryMessage, data)
 }
 
 // RecvMessage reads a RepoMessage from the websocket.
@@ -72,7 +82,7 @@ func DialWebSocket(u string, id RepoID) (*WSConn, RepoID, error) {
 		return nil, RepoID{}, err
 	}
 	ws := NewWSConn(conn)
-	if err := ws.Send(handshakeMessage{Type: "join", SenderID: id}); err != nil {
+	if err := ws.Send(handshakeMessage{Type: "join", SenderID: id.String()}); err != nil {
 		ws.Close()
 		return nil, RepoID{}, err
 	}
@@ -85,11 +95,16 @@ func DialWebSocket(u string, id RepoID) (*WSConn, RepoID, error) {
 		ws.Close()
 		return nil, RepoID{}, fmt.Errorf("unexpected message %q", resp.Type)
 	}
-	return ws, resp.SenderID, nil
+	remote, err := uuid.Parse(resp.SenderID)
+	if err != nil {
+		ws.Close()
+		return nil, RepoID{}, err
+	}
+	return ws, remote, nil
 }
 
 // AcceptWebSocket upgrades an HTTP request to a websocket and completes the
-// join/peer handshake. The returned connection can be used for JSON message
+// join/peer handshake. The returned connection can be used for CBOR message
 // exchange.
 func AcceptWebSocket(w http.ResponseWriter, r *http.Request, id RepoID) (*WSConn, RepoID, error) {
 	upgrader := websocket.Upgrader{}
@@ -107,9 +122,14 @@ func AcceptWebSocket(w http.ResponseWriter, r *http.Request, id RepoID) (*WSConn
 		ws.Close()
 		return nil, RepoID{}, fmt.Errorf("unexpected message %q", req.Type)
 	}
-	if err := ws.Send(handshakeMessage{Type: "peer", SenderID: id}); err != nil {
+	if err := ws.Send(handshakeMessage{Type: "peer", SenderID: id.String()}); err != nil {
 		ws.Close()
 		return nil, RepoID{}, err
 	}
-	return ws, req.SenderID, nil
+	remote, err := uuid.Parse(req.SenderID)
+	if err != nil {
+		ws.Close()
+		return nil, RepoID{}, err
+	}
+	return ws, remote, nil
 }
