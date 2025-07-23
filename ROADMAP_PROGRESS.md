@@ -11,10 +11,12 @@ future development.
   - Includes `Connect` helper which performs the join/peer handshake and
     returns the remote repository ID along with a connection handle.
   - Unit test `TestConnect` exercises the handshake over a `net.Pipe`.
+- Added WebSocket connector helpers `DialWebSocket` and `AcceptWebSocket`.
+  - Uses Gorilla WebSocket to upgrade HTTP connections and send JSON messages.
+  - Unit test `TestWebSocketHandshake` verifies the WebSocket handshake.
 
 ## Missing / Next Steps
 
-- WebSocket support and integration with the connector API.
 - Handling of `RepoMessage` types (sync and ephemeral messages).
 - Connection lifecycle management and background goroutines similar to the
   Rust `RepoHandle` implementation.
