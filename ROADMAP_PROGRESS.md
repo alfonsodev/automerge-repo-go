@@ -17,9 +17,12 @@ future development.
 - Introduced `RepoMessage` type and JSON encoding helpers in `repo/message.go`.
   - Supports `sync` and `ephemeral` message variants.
   - Added unit test `TestRepoMessageEncodeDecode` for round‑trip validation.
+- Extended `LPConn` and `WSConn` with `SendMessage`/`RecvMessage` for
+  transmitting `RepoMessage` values.
+  - Added unit tests `TestLPConnSendRecvMessage` and `TestWSConnSendRecvMessage`
+    verifying JSON message exchange.
 
 ## Missing / Next Steps
-- Integrate `RepoMessage` handling with connectors for full sync protocol.
 - Connection lifecycle management and background goroutines similar to the
   Rust `RepoHandle` implementation.
 - Integration of connectors with the example CLI for real networking.

@@ -5,6 +5,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/google/uuid"
 )
 
 func TestWebSocketHandshake(t *testing.T) {
@@ -39,5 +41,54 @@ func TestWebSocketHandshake(t *testing.T) {
 
 	if remoteFromClient != serverRepo.ID || remoteFromServer != clientRepo.ID {
 		t.Fatalf("unexpected repo IDs: %v %v", remoteFromClient, remoteFromServer)
+	}
+}
+
+func TestWSConnSendRecvMessage(t *testing.T) {
+	serverRepo := New()
+	clientRepo := New()
+
+	var received RepoMessage
+	done := make(chan struct{})
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		conn, _, err := AcceptWebSocket(w, r, serverRepo.ID)
+		if err != nil {
+			t.Errorf("accept error: %v", err)
+			close(done)
+			return
+		}
+		defer conn.Close()
+		received, err = conn.RecvMessage()
+		if err != nil {
+			t.Errorf("recv error: %v", err)
+		}
+		close(done)
+	}))
+	defer srv.Close()
+
+	wsURL := "ws" + strings.TrimPrefix(srv.URL, "http")
+
+	conn, _, err := DialWebSocket(wsURL, clientRepo.ID)
+	if err != nil {
+		t.Fatalf("dial error: %v", err)
+	}
+	defer conn.Close()
+
+	msg := RepoMessage{
+		Type:       "sync",
+		FromRepoID: clientRepo.ID,
+		ToRepoID:   serverRepo.ID,
+		DocumentID: uuid.New(),
+		Message:    []byte("ws"),
+	}
+	if err := conn.SendMessage(msg); err != nil {
+		t.Fatalf("send error: %v", err)
+	}
+
+	<-done
+
+	if received.Type != msg.Type || received.FromRepoID != msg.FromRepoID || received.ToRepoID != msg.ToRepoID || received.DocumentID != msg.DocumentID || string(received.Message) != string(msg.Message) {
+		t.Fatalf("mismatch: %#v vs %#v", received, msg)
 	}
 }

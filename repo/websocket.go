@@ -32,6 +32,26 @@ func (c *WSConn) Recv(v interface{}) error {
 	return c.c.ReadJSON(v)
 }
 
+// SendMessage sends a RepoMessage as JSON over the websocket.
+func (c *WSConn) SendMessage(msg RepoMessage) error {
+	data, err := msg.Encode()
+	if err != nil {
+		return err
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.c.WriteMessage(websocket.TextMessage, data)
+}
+
+// RecvMessage reads a RepoMessage from the websocket.
+func (c *WSConn) RecvMessage() (RepoMessage, error) {
+	_, data, err := c.c.ReadMessage()
+	if err != nil {
+		return RepoMessage{}, err
+	}
+	return DecodeRepoMessage(data)
+}
+
 // Close closes the websocket.
 func (c *WSConn) Close() error { return c.c.Close() }
 
