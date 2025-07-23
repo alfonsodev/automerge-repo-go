@@ -42,8 +42,15 @@ future development.
   - On connect or accept it performs the join/peer handshake and syncs all
     documents.
   - Messages received are printed to stdout.
+- Added handling for send failures in `RepoHandle`.
+  - `SendMessage` and `Broadcast` now emit `conn_error` and remove the peer when
+    a send operation fails.
+- Configured GitHub Actions workflow `go.yml` for CI.
+  - Runs `go vet` and `go test` on Linux, macOS and Windows.
 
 ## Missing / Next Steps
 - Additional CLI features like editing documents over the network are still planned.
 - Document handles and reconnection logic remain to be implemented.
 - Review connection loops and continue improving error propagation similar to the Rust `ConnComplete` API.
+- Package level documentation and usage examples are still required.
+- Versioned releases have not yet been prepared.

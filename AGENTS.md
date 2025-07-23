@@ -52,12 +52,12 @@ API, improving reliability and providing tooling for real world use:
 - [x] **CBOR message format** – replace the temporary JSON encoding with the
   CBOR based protocol implemented in `rust/src/message.rs` so Go peers can
   interoperate with other Automerge Repo implementations.
-2. **Robust error handling** – audit the goroutine based sync loops and
+2. [x] **Robust error handling** – audit the goroutine based sync loops and
    connectors to ensure failures are surfaced correctly and connections are
    cleaned up. Mirror the `ConnComplete` semantics from the Rust code.
 3. **Documentation & examples** – write package level docs and expand the CLI
    programs to demonstrate document sharing across multiple peers.
-4. **Continuous integration** – configure a CI workflow that builds and runs
+4. [x] **Continuous integration** – configure a CI workflow that builds and runs
    tests on Linux, macOS and Windows. Include `go vet` and coverage reporting.
 5. **Versioned releases** – once the API stabilises, tag releases and provide
    instructions for importing via Go modules.

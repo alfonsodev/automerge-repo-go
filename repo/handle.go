@@ -123,7 +123,12 @@ func (h *RepoHandle) SendMessage(remote RepoID, msg RepoMessage) error {
 	if !ok {
 		return fmt.Errorf("peer %s not found", remote)
 	}
-	return pi.conn.SendMessage(msg)
+	if err := pi.conn.SendMessage(msg); err != nil {
+		h.emitEvent(HandleEvent{Type: EventConnError, Peer: remote, Err: err})
+		h.RemoveConn(remote)
+		return err
+	}
+	return nil
 }
 
 // Broadcast sends msg to all connected peers. Errors are returned for the first
@@ -131,12 +136,17 @@ func (h *RepoHandle) SendMessage(remote RepoID, msg RepoMessage) error {
 func (h *RepoHandle) Broadcast(msg RepoMessage) error {
 	h.mu.Lock()
 	conns := make([]Conn, 0, len(h.peers))
-	for _, pi := range h.peers {
-		conns = append(conns, pi.conn)
+	ids := make([]RepoID, 0, len(h.peers))
+	for id := range h.peers {
+		ids = append(ids, id)
+		conns = append(conns, h.peers[id].conn)
 	}
 	h.mu.Unlock()
-	for _, c := range conns {
+	for i, c := range conns {
 		if err := c.SendMessage(msg); err != nil {
+			remote := ids[i]
+			h.emitEvent(HandleEvent{Type: EventConnError, Peer: remote, Err: err})
+			h.RemoveConn(remote)
 			return err
 		}
 	}
