@@ -31,7 +31,8 @@ Available commands are:
 ### Networking example
 
 The program under `cmd/tcp-example` demonstrates establishing a networking
-handshake between peers. Run one instance in server mode:
+handshake between peers and synchronising a document. Run one instance in
+server mode:
 
 ```bash
 go run ./cmd/tcp-example -listen :9999
@@ -43,7 +44,9 @@ And another in client mode connecting to it:
 go run ./cmd/tcp-example -connect localhost:9999
 ```
 
-Each side prints the remote repository ID once the handshake completes.
+Each side prints the remote repository ID once the handshake completes. After
+connecting you can issue `set <key> <value>` commands on either side and the
+changes will be synced to all peers.
 
 Messages and handshake data are encoded using CBOR for compatibility with
 other Automerge Repo implementations.
