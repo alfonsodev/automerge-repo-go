@@ -15,7 +15,7 @@ This repository contains a work-in-progress port of the Automerge Repo from Rust
 - [x] Persist repository data to disk using `FsStore`.
 - [x] Add tests for `repo.Repo` and `repo.FsStore`.
 - [x] Prototype networking support based on the Rust implementation.
-- [ ] Port or rewrite example programs from `rust/examples` in Go.
+- [x] Port or rewrite example programs from `rust/examples` in Go.
 
 ## Maintaining this file
 
