@@ -50,9 +50,11 @@ future development.
   - Runs `go vet` and `go test` on Linux, macOS and Windows.
 - Added package level documentation in `repo/doc.go` describing the main types
   and how to use network connectors.
+- Added `scripts/release.sh` and release instructions in `README.md`.
+  - Provides a helper for tagging versions and building cross platform binaries.
 
 ## Missing / Next Steps
 - Document handles and reconnection logic remain to be implemented.
 - Review connection loops and continue improving error propagation similar to the Rust `ConnComplete` API.
 - More comprehensive usage examples would be helpful.
-- Versioned releases have not yet been prepared.
+- Consider automating GitHub releases in the future.
