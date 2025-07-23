@@ -14,10 +14,12 @@ future development.
 - Added WebSocket connector helpers `DialWebSocket` and `AcceptWebSocket`.
   - Uses Gorilla WebSocket to upgrade HTTP connections and send JSON messages.
   - Unit test `TestWebSocketHandshake` verifies the WebSocket handshake.
+- Introduced `RepoMessage` type and JSON encoding helpers in `repo/message.go`.
+  - Supports `sync` and `ephemeral` message variants.
+  - Added unit test `TestRepoMessageEncodeDecode` for round‑trip validation.
 
 ## Missing / Next Steps
-
-- Handling of `RepoMessage` types (sync and ephemeral messages).
+- Integrate `RepoMessage` handling with connectors for full sync protocol.
 - Connection lifecycle management and background goroutines similar to the
   Rust `RepoHandle` implementation.
 - Integration of connectors with the example CLI for real networking.
