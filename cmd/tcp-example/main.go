@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"net"
+	"os"
 
 	"github.com/example/automerge-repo-go/repo"
 )
@@ -18,13 +19,23 @@ func main() {
 		return
 	}
 
-	r := repo.New()
+	handle := repo.NewRepoHandle(repo.New())
+	doc := handle.Repo.NewDoc()
+	_ = doc.Set("greeting", "hello")
+
+	go func() {
+		for msg := range handle.Inbox {
+			fmt.Printf("received %s message for doc %s\n", msg.Type, msg.DocumentID)
+		}
+	}()
+
 	if *listenAddr != "" {
 		ln, err := net.Listen("tcp", *listenAddr)
 		if err != nil {
-			panic(err)
+			fmt.Println("listen error:", err)
+			os.Exit(1)
 		}
-		fmt.Printf("listening on %s with repo %s\n", *listenAddr, r.ID)
+		fmt.Printf("listening on %s with repo %s\n", *listenAddr, handle.Repo.ID)
 		for {
 			conn, err := ln.Accept()
 			if err != nil {
@@ -32,25 +43,28 @@ func main() {
 				continue
 			}
 			go func(c net.Conn) {
-				defer c.Close()
-				remote, err := repo.Handshake(c, r.ID, repo.Incoming)
+				lp, remote, err := repo.Connect(c, handle.Repo.ID, repo.Incoming)
 				if err != nil {
 					fmt.Println("handshake error:", err)
+					c.Close()
 					return
 				}
-				fmt.Println("connected peer", remote)
+				handle.AddConn(remote, lp)
+				handle.SyncAll(remote)
 			}(conn)
 		}
 	} else if *connectAddr != "" {
 		conn, err := net.Dial("tcp", *connectAddr)
 		if err != nil {
-			panic(err)
+			fmt.Println("dial error:", err)
+			return
 		}
-		fmt.Printf("connecting to %s from repo %s\n", *connectAddr, r.ID)
-		remote, err := repo.Handshake(conn, r.ID, repo.Outgoing)
+		lp, remote, err := repo.Connect(conn, handle.Repo.ID, repo.Outgoing)
 		if err != nil {
-			panic(err)
+			fmt.Println("handshake error:", err)
+			return
 		}
-		fmt.Println("connected to peer", remote)
+		handle.AddConn(remote, lp)
+		handle.SyncAll(remote)
 	}
 }

@@ -19,6 +19,31 @@ type Document struct {
 	doc *automerge.Doc
 }
 
+// NewSyncState returns a sync state for exchanging changes of this document with a peer.
+func (d *Document) NewSyncState() *automerge.SyncState {
+	if d.doc == nil {
+		d.doc = automerge.New()
+	}
+	return automerge.NewSyncState(d.doc)
+}
+
+// ReceiveSyncMessage applies a sync message to the document using the given state.
+func (d *Document) ReceiveSyncMessage(state *automerge.SyncState, msg []byte) error {
+	state.Doc = d.doc
+	_, err := state.ReceiveMessage(msg)
+	return err
+}
+
+// GenerateSyncMessage produces the next sync message for the peer using the given state.
+func (d *Document) GenerateSyncMessage(state *automerge.SyncState) ([]byte, bool) {
+	state.Doc = d.doc
+	sm, valid := state.GenerateMessage()
+	if !valid {
+		return nil, false
+	}
+	return sm.Bytes(), true
+}
+
 // Set assigns a value in the document.
 func (d *Document) Set(key string, value interface{}) error {
 	if d.doc == nil {
