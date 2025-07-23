@@ -78,3 +78,16 @@ All pushes and pull requests are validated by a GitHub Actions workflow defined
 in `.github/workflows/go.yml`. The workflow runs `go vet` and `go test` on
 Linux, macOS and Windows using the latest Go releases.
 
+
+## Release process
+
+Releases are tagged using semantic versions. The `scripts/release.sh` helper
+builds binaries for the example programs across supported platforms and
+packages them into a tarball. To cut a new version run:
+
+```bash
+./scripts/release.sh v0.1.0
+```
+
+The script creates and pushes the git tag then writes the build artifacts to
+`dist/`. Upload the resulting tarball when creating a GitHub release.

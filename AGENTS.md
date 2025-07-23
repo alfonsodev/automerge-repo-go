@@ -59,7 +59,7 @@ API, improving reliability and providing tooling for real world use:
    programs to demonstrate document sharing across multiple peers. **(done)**
 4. [x] **Continuous integration** – configure a CI workflow that builds and runs
    tests on Linux, macOS and Windows. Include `go vet` and coverage reporting.
-5. **Versioned releases** – once the API stabilises, tag releases and provide
+5. [x] **Versioned releases** – once the API stabilises, tag releases and provide
    instructions for importing via Go modules.
 
 ## Maintaining this file
