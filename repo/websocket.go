@@ -1,10 +1,12 @@
 package repo
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/url"
 	"sync"
+	"time"
 
 	"github.com/fxamacker/cbor/v2"
 	"github.com/google/uuid"
@@ -68,7 +70,7 @@ func (c *WSConn) Close() error { return c.c.Close() }
 // DialWebSocket dials the given websocket URL and performs the join/peer handshake.
 // It returns the remote repository ID and a connection handle for further
 // communication.
-func DialWebSocket(u string, id RepoID) (*WSConn, RepoID, error) {
+func DialWebSocket(ctx context.Context, u string, id RepoID) (*WSConn, RepoID, error) {
 	// ensure scheme is ws/wss
 	parsed, err := url.Parse(u)
 	if err != nil {
@@ -77,11 +79,18 @@ func DialWebSocket(u string, id RepoID) (*WSConn, RepoID, error) {
 	if parsed.Scheme != "ws" && parsed.Scheme != "wss" {
 		return nil, RepoID{}, fmt.Errorf("invalid websocket url: %s", u)
 	}
-	conn, _, err := websocket.DefaultDialer.Dial(u, nil)
+	dialer := websocket.DefaultDialer
+	conn, _, err := dialer.DialContext(ctx, u, nil)
 	if err != nil {
 		return nil, RepoID{}, err
 	}
 	ws := NewWSConn(conn)
+	if d, ok := ctx.Deadline(); ok {
+		_ = conn.SetReadDeadline(d)
+		_ = conn.SetWriteDeadline(d)
+		defer conn.SetReadDeadline(time.Time{})
+		defer conn.SetWriteDeadline(time.Time{})
+	}
 	if err := ws.Send(handshakeMessage{Type: "join", SenderID: id.String()}); err != nil {
 		ws.Close()
 		return nil, RepoID{}, err

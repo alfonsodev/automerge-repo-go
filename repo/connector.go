@@ -1,11 +1,13 @@
 package repo
 
 import (
+	"context"
 	"encoding/binary"
 	"fmt"
 	"io"
 	"net"
 	"sync"
+	"time"
 
 	"github.com/fxamacker/cbor/v2"
 	"github.com/google/uuid"
@@ -89,7 +91,12 @@ func (c *LPConn) Close() error { return c.rw.Close() }
 
 // Connect performs a handshake over conn using length-prefixed messages and
 // returns the remote repo ID along with a LPConn for further communication.
-func Connect(conn net.Conn, id RepoID, dir ConnDirection) (*LPConn, RepoID, error) {
+func Connect(ctx context.Context, conn net.Conn, id RepoID, dir ConnDirection) (*LPConn, RepoID, error) {
+	if d, ok := ctx.Deadline(); ok {
+		_ = conn.SetDeadline(d)
+		defer conn.SetDeadline(time.Time{})
+	}
+
 	lp := NewLPConn(conn)
 	switch dir {
 	case Outgoing:

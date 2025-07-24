@@ -8,7 +8,9 @@ The goal of this port is to provide a Go implementation that offers
 the same high level API for working with Automerge documents and
 network peers. Development is at an early stage and the API should be
 considered unstable. A prototype networking handshake using CBOR
-encoding is now available via `repo.Handshake`.
+encoding is now available via `repo.Handshake`. The handshake helpers
+now accept a `context.Context` which can be used to apply timeouts or
+cancel the operation.
 
 Basic document persistence is available using `repo.FsStore` and documents
 internally use the [automerge-go](https://github.com/automerge/automerge-go)
@@ -54,7 +56,8 @@ other Automerge Repo implementations.
 WebSocket connections are supported via `repo.DialWebSocket` and
 `repo.AcceptWebSocket`. They use the same join/peer handshake over a WebSocket
 upgrade so repositories can communicate through standard HTTP servers or
-browsers.
+browsers. `DialWebSocket` also requires a `context.Context` for applying
+timeouts.
 
 ## Building
 

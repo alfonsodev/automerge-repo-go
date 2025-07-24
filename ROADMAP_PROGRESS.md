@@ -52,6 +52,9 @@ future development.
   and how to use network connectors.
 - Added `scripts/release.sh` and release instructions in `README.md`.
   - Provides a helper for tagging versions and building cross platform binaries.
+- Handshake helpers now accept a `context.Context` to allow timeouts.
+  - `Connect`, `DialWebSocket` and `Handshake` updated along with all callers
+    and unit tests.
 
 ## Missing / Next Steps
 - Document handles and reconnection logic remain to be implemented.

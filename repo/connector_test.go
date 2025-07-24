@@ -1,8 +1,10 @@
 package repo
 
 import (
+	"context"
 	"net"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -17,14 +19,18 @@ func TestConnect(t *testing.T) {
 	var lp1 *LPConn
 	var lp2 *LPConn
 	errCh := make(chan error, 2)
+	ctx1, cancel1 := context.WithTimeout(context.Background(), time.Second)
+	defer cancel1()
 	go func() {
 		var err error
-		lp1, remote1, err = Connect(c1, repo1.ID, Outgoing)
+		lp1, remote1, err = Connect(ctx1, c1, repo1.ID, Outgoing)
 		errCh <- err
 	}()
+	ctx2, cancel2 := context.WithTimeout(context.Background(), time.Second)
+	defer cancel2()
 	go func() {
 		var err error
-		lp2, remote2, err = Connect(c2, repo2.ID, Incoming)
+		lp2, remote2, err = Connect(ctx2, c2, repo2.ID, Incoming)
 		errCh <- err
 	}()
 	if err := <-errCh; err != nil {
