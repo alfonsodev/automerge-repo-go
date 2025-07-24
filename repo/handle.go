@@ -94,7 +94,7 @@ func NewRepoHandle(r *Repo) *RepoHandle {
 	return &RepoHandle{
 		Repo:   r,
 		peers:  make(map[RepoID]*peerInfo),
-		Inbox:  make(chan RepoMessage),
+		Inbox:  make(chan RepoMessage, 16),
 		Events: make(chan HandleEvent, 8),
 	}
 }
@@ -171,6 +171,7 @@ func (h *RepoHandle) readLoop(remote RepoID, c Conn, done chan ConnFinished) {
 			h.handleSyncMessage(remote, msg)
 			continue
 		}
+		fmt.Printf("readLoop: Sending message type %s to Inbox for doc %s\n", msg.Type, msg.DocumentID)
 		h.Inbox <- msg
 	}
 	h.removePeer(remote, ConnFinished{Kind: ConnFinishedRecvError, Err: err})

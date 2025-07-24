@@ -45,7 +45,7 @@ func main() {
 			fmt.Println("listen error:", err)
 			os.Exit(1)
 		}
-		fmt.Printf("listening on %s with repo %s\n", *listenAddr, handle.Repo.ID)
+		fmt.Printf("listening on %s with repo %s\n", ln.Addr().String(), handle.Repo.ID)
 		go func() {
 			for {
 				conn, err := ln.Accept()
