@@ -60,6 +60,7 @@ future development.
   - Added unit test `TestRepoHandleConnComplete` verifying the signal.
 - Implemented automatic reconnection via `RepoHandle.AddConnWithRetry`.
   - New test `TestRepoHandleReconnect` covers connection retry behaviour.
+- Added multi-peer integration test `TestMultiPeerSync` verifying document propagation across three interconnected handles.
 
 ## Missing / Next Steps
 - Review connection loops and continue improving error propagation similar to the Rust `ConnComplete` API.
