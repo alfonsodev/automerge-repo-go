@@ -9,7 +9,8 @@ package repo
 // notification mechanism. When created via Repo methods the handle
 // will automatically persist changes using the repo's store if one is
 // configured. Repositories can be configured with a SharePolicy that
-// determines whether documents are synchronised with particular peers.
+// determines whether documents are synchronised with particular peers and
+// may also veto announcements or requests for specific documents.
 //
 // A simple TCP connector and WebSocket helpers are available to establish
 // connections between repositories. Messages exchanged between peers use the

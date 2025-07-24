@@ -18,7 +18,9 @@ library. Documents can be accessed through `DocumentHandle` which provides
 a simple change notification API. When a repository has a store configured,
 mutating a `DocumentHandle` will automatically save the updated document to
 disk. Repositories may also be configured with a `SharePolicy` to control
-which documents are synchronised with particular peers. The program under
+which documents are synchronised with particular peers. Policies can also
+decide whether documents should be announced to or requested from a peer.
+The program under
 `cmd/example` provides a small CLI for creating and editing documents stored on
 disk.
 
