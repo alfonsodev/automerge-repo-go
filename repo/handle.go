@@ -306,6 +306,10 @@ func (h *RepoHandle) handleSyncMessage(remote RepoID, msg RepoMessage) {
 	}
 	doc, docOK := h.Repo.GetDoc(msg.DocumentID)
 	if !docOK {
+		if h.Repo.sharePolicy != nil && h.Repo.sharePolicy.ShouldRequest(msg.DocumentID, remote) == DontShare {
+			h.mu.Unlock()
+			return
+		}
 		// create empty document if not present
 		doc = &Document{ID: msg.DocumentID, doc: automerge.New()}
 		h.Repo.docs[msg.DocumentID] = doc
@@ -330,6 +334,9 @@ func (h *RepoHandle) SyncAll(remote RepoID) error {
 	}
 	h.mu.Unlock()
 	for _, id := range ids {
+		if h.Repo.sharePolicy != nil && h.Repo.sharePolicy.ShouldAnnounce(id, remote) == DontShare {
+			continue
+		}
 		if err := h.SyncDocument(remote, id); err != nil {
 			return err
 		}

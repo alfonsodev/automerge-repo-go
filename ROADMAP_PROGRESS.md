@@ -77,11 +77,14 @@ future development.
   are synchronised with peers.
   - Default `PermissiveSharePolicy` always shares documents.
   - Added unit test `TestSharePolicyBlocksSync` verifying policy behaviour.
+  - SharePolicy now also controls document requests and announcements.
+    `RepoHandle` consults `ShouldRequest` and `ShouldAnnounce` and tests cover
+    these paths.
 
 ## Missing / Next Steps
 - More comprehensive usage examples would be helpful.
 - Consider automating GitHub releases in the future.
 - Expand `DocumentHandle` integration with `RepoHandle` and add more
   persistence features such as snapshot compaction.
-- Extend `SharePolicy` with request and announcement checks to fully match the
-  Rust implementation.
+- ~~Extend `SharePolicy` with request and announcement checks to fully match the
+  Rust implementation.~~ (done)
