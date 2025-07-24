@@ -2,6 +2,7 @@ package repo
 
 import (
 	"fmt"
+	"sync"
 
 	automerge "github.com/automerge/automerge-go"
 	"github.com/google/uuid"
@@ -17,6 +18,9 @@ type RepoID = uuid.UUID
 type Document struct {
 	ID  DocumentID
 	doc *automerge.Doc
+
+	watchers   []chan struct{}
+	watchersMu sync.Mutex
 }
 
 // NewSyncState returns a sync state for exchanging changes of this document with a peer.
@@ -31,6 +35,9 @@ func (d *Document) NewSyncState() *automerge.SyncState {
 func (d *Document) ReceiveSyncMessage(state *automerge.SyncState, msg []byte) error {
 	state.Doc = d.doc
 	_, err := state.ReceiveMessage(msg)
+	if err == nil {
+		d.notifyWatchers()
+	}
 	return err
 }
 
@@ -53,6 +60,9 @@ func (d *Document) Set(key string, value interface{}) error {
 		return err
 	}
 	_, err := d.doc.Commit("set")
+	if err == nil {
+		d.notifyWatchers()
+	}
 	return err
 }
 

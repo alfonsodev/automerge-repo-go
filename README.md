@@ -14,8 +14,9 @@ cancel the operation.
 
 Basic document persistence is available using `repo.FsStore` and documents
 internally use the [automerge-go](https://github.com/automerge/automerge-go)
-library. The program under `cmd/example` provides a small CLI for creating and
-editing documents stored on disk.
+library. Documents can be accessed through `DocumentHandle` which provides
+a simple change notification API. The program under `cmd/example` provides a
+small CLI for creating and editing documents stored on disk.
 
 Run it with:
 
