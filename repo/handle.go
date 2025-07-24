@@ -56,18 +56,36 @@ func (h *RepoHandle) emitEvent(e HandleEvent) {
 	h.Events <- e
 }
 
+// ConnFinishedKind describes why a connection goroutine exited.
+type ConnFinishedKind int
+
+const (
+	// The connection ended because a receive operation failed.
+	ConnFinishedRecvError ConnFinishedKind = iota
+	// The connection ended because a send operation failed.
+	ConnFinishedSendError
+	// The connection was closed locally via RemoveConn.
+	ConnFinishedLocalClose
+)
+
+// ConnFinished provides the reason a connection goroutine exited.
+type ConnFinished struct {
+	Kind ConnFinishedKind
+	Err  error
+}
+
 // ConnComplete is returned by AddConn and resolves when the connection
-// goroutine exits. The error value indicates why the connection finished.
-type ConnComplete struct{ ch <-chan error }
+// goroutine exits. The ConnFinished value indicates why the connection finished.
+type ConnComplete struct{ ch <-chan ConnFinished }
 
 // Await blocks until the connection has completed and returns the reason.
-func (c ConnComplete) Await() error {
+func (c ConnComplete) Await() ConnFinished {
 	return <-c.ch
 }
 
 type peerInfo struct {
 	conn       Conn
-	complete   chan error
+	complete   chan ConnFinished
 	syncStates map[DocumentID]*automerge.SyncState
 }
 
@@ -89,7 +107,7 @@ func (h *RepoHandle) AddConn(remote RepoID, c Conn) ConnComplete {
 	if h.peers == nil {
 		h.peers = make(map[RepoID]*peerInfo)
 	}
-	done := make(chan error, 1)
+	done := make(chan ConnFinished, 1)
 	h.peers[remote] = &peerInfo{conn: c, complete: done, syncStates: make(map[DocumentID]*automerge.SyncState)}
 	h.mu.Unlock()
 
@@ -103,13 +121,13 @@ func (h *RepoHandle) AddConn(remote RepoID, c Conn) ConnComplete {
 // retried after delay until ctx is canceled. The returned ConnComplete resolves
 // when the retry loop exits.
 func (h *RepoHandle) AddConnWithRetry(ctx context.Context, remote RepoID, dial func(context.Context) (Conn, error), delay time.Duration) ConnComplete {
-	done := make(chan error, 1)
+	done := make(chan ConnFinished, 1)
 	go func() {
 		for {
 			select {
 			case <-ctx.Done():
-				h.RemoveConn(remote)
-				done <- ctx.Err()
+				h.removePeer(remote, ConnFinished{Kind: ConnFinishedLocalClose, Err: ctx.Err()})
+				done <- ConnFinished{Kind: ConnFinishedLocalClose, Err: ctx.Err()}
 				close(done)
 				return
 			default:
@@ -117,28 +135,30 @@ func (h *RepoHandle) AddConnWithRetry(ctx context.Context, remote RepoID, dial f
 
 			conn, err := dial(ctx)
 			if err != nil {
-				done <- err
+				done <- ConnFinished{Kind: ConnFinishedRecvError, Err: err}
 				close(done)
 				return
 			}
 			cc := h.AddConn(remote, conn)
-			_ = cc.Await()
+			cc.Await()
 
-			select {
-			case <-ctx.Done():
-				h.RemoveConn(remote)
-				done <- ctx.Err()
+			if ctx.Err() != nil {
+				h.removePeer(remote, ConnFinished{Kind: ConnFinishedLocalClose, Err: ctx.Err()})
+				done <- ConnFinished{Kind: ConnFinishedLocalClose, Err: ctx.Err()}
 				close(done)
 				return
-			case <-time.After(delay):
 			}
+
+			// wait before reconnecting regardless of reason
+			time.Sleep(delay)
+			continue
 		}
 	}()
 	return ConnComplete{ch: done}
 }
 
 // readLoop continuously receives messages from c and publishes them to Inbox.
-func (h *RepoHandle) readLoop(remote RepoID, c Conn, done chan error) {
+func (h *RepoHandle) readLoop(remote RepoID, c Conn, done chan ConnFinished) {
 	var err error
 	for {
 		var msg RepoMessage
@@ -153,13 +173,15 @@ func (h *RepoHandle) readLoop(remote RepoID, c Conn, done chan error) {
 		}
 		h.Inbox <- msg
 	}
-	h.RemoveConn(remote)
-	done <- err
-	close(done)
+	h.removePeer(remote, ConnFinished{Kind: ConnFinishedRecvError, Err: err})
 }
 
 // RemoveConn closes and deletes the connection associated with the peer.
 func (h *RepoHandle) RemoveConn(remote RepoID) {
+	h.removePeer(remote, ConnFinished{Kind: ConnFinishedLocalClose})
+}
+
+func (h *RepoHandle) removePeer(remote RepoID, reason ConnFinished) {
 	h.mu.Lock()
 	pi, ok := h.peers[remote]
 	if ok {
@@ -170,6 +192,10 @@ func (h *RepoHandle) RemoveConn(remote RepoID) {
 	if ok {
 		pi.conn.Close()
 		h.emitEvent(HandleEvent{Type: EventPeerDisconnected, Peer: remote})
+		if pi.complete != nil {
+			pi.complete <- reason
+			close(pi.complete)
+		}
 	}
 }
 
@@ -183,7 +209,7 @@ func (h *RepoHandle) SendMessage(remote RepoID, msg RepoMessage) error {
 	}
 	if err := pi.conn.SendMessage(msg); err != nil {
 		h.emitEvent(HandleEvent{Type: EventConnError, Peer: remote, Err: err})
-		h.RemoveConn(remote)
+		h.removePeer(remote, ConnFinished{Kind: ConnFinishedSendError, Err: err})
 		return err
 	}
 	return nil
@@ -204,7 +230,7 @@ func (h *RepoHandle) Broadcast(msg RepoMessage) error {
 		if err := c.SendMessage(msg); err != nil {
 			remote := ids[i]
 			h.emitEvent(HandleEvent{Type: EventConnError, Peer: remote, Err: err})
-			h.RemoveConn(remote)
+			h.removePeer(remote, ConnFinished{Kind: ConnFinishedSendError, Err: err})
 			return err
 		}
 	}
@@ -217,8 +243,13 @@ func (h *RepoHandle) Close() {
 	conns := h.peers
 	h.peers = make(map[RepoID]*peerInfo)
 	h.mu.Unlock()
-	for _, pi := range conns {
+	for id, pi := range conns {
 		pi.conn.Close()
+		if pi.complete != nil {
+			pi.complete <- ConnFinished{Kind: ConnFinishedLocalClose}
+			close(pi.complete)
+		}
+		h.emitEvent(HandleEvent{Type: EventPeerDisconnected, Peer: id})
 	}
 	close(h.Inbox)
 	if h.Events != nil {

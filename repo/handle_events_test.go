@@ -76,7 +76,7 @@ func TestRepoHandleConnComplete(t *testing.T) {
 	c2.Close()
 
 	// wait for completion
-	if err := cc.Await(); err == nil {
+	if fin := cc.Await(); fin.Err == nil {
 		t.Fatalf("expected error, got nil")
 	}
 
