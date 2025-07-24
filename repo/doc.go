@@ -8,7 +8,8 @@ package repo
 // DocumentHandle which exposes helper methods and a simple change
 // notification mechanism. When created via Repo methods the handle
 // will automatically persist changes using the repo's store if one is
-// configured.
+// configured. Repositories can also be configured with a SharePolicy
+// to control which documents are synchronised with which peers.
 //
 // A simple TCP connector and WebSocket helpers are available to establish
 // connections between repositories. Messages exchanged between peers use the

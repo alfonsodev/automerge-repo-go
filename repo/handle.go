@@ -263,6 +263,10 @@ func (h *RepoHandle) SyncDocument(remote RepoID, docID DocumentID) error {
 	pi, ok := h.peers[remote]
 	doc, docOK := h.Repo.GetDoc(docID)
 	if ok && docOK {
+		if h.Repo.sharePolicy != nil && h.Repo.sharePolicy.ShouldSync(docID, remote) == DontShare {
+			h.mu.Unlock()
+			return nil
+		}
 		state := pi.syncStates[docID]
 		if state == nil {
 			state = doc.NewSyncState()
@@ -296,6 +300,10 @@ func (h *RepoHandle) handleSyncMessage(remote RepoID, msg RepoMessage) {
 		h.mu.Unlock()
 		return
 	}
+	if h.Repo.sharePolicy != nil && h.Repo.sharePolicy.ShouldSync(msg.DocumentID, remote) == DontShare {
+		h.mu.Unlock()
+		return
+	}
 	doc, docOK := h.Repo.GetDoc(msg.DocumentID)
 	if !docOK {
 		// create empty document if not present
@@ -322,6 +330,9 @@ func (h *RepoHandle) SyncAll(remote RepoID) error {
 	}
 	h.mu.Unlock()
 	for _, id := range ids {
+		if h.Repo.sharePolicy != nil && h.Repo.sharePolicy.ShouldAnnounce(id, remote) == DontShare {
+			continue
+		}
 		if err := h.SyncDocument(remote, id); err != nil {
 			return err
 		}

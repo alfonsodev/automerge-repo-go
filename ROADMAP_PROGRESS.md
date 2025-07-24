@@ -73,8 +73,16 @@ future development.
   store configured.
   - Added unit test `TestDocumentHandleAutoSave` verifying saved data.
 
+- Introduced `SharePolicy` allowing repositories to control document
+  sharing with peers.
+  - Default policy is permissive.
+  - RepoHandle now checks the policy when syncing documents.
+  - Added unit test `TestSharePolicyBlocksSync` covering the behaviour.
+
 ## Missing / Next Steps
 - More comprehensive usage examples would be helpful.
 - Consider automating GitHub releases in the future.
 - Expand `DocumentHandle` integration with `RepoHandle` and add more
   persistence features such as snapshot compaction.
+- Extend `SharePolicy` integration to cover announce and request
+  decisions.
