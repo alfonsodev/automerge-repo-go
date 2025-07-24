@@ -58,6 +58,10 @@ future development.
 - Added `ConnComplete` to signal when peer goroutines exit.
   - `RepoHandle.AddConn` now returns a completion handle.
   - Added unit test `TestRepoHandleConnComplete` verifying the signal.
+- ConnComplete now provides structured reasons via `ConnFinished`.
+  - `RepoHandle` connection loops emit `ConnFinishedRecvError`, `ConnFinishedSendError`
+    or `ConnFinishedLocalClose`.
+  - Updated tests to assert on the returned error field.
 - Implemented automatic reconnection via `RepoHandle.AddConnWithRetry`.
   - New test `TestRepoHandleReconnect` covers connection retry behaviour.
 - Added multi-peer integration test `TestMultiPeerSync` verifying document propagation across three interconnected handles.
@@ -70,7 +74,6 @@ future development.
   - Added unit test `TestDocumentHandleAutoSave` verifying saved data.
 
 ## Missing / Next Steps
-- Review connection loops and continue improving error propagation similar to the Rust `ConnComplete` API.
 - More comprehensive usage examples would be helpful.
 - Consider automating GitHub releases in the future.
 - Expand `DocumentHandle` integration with `RepoHandle` and add more
