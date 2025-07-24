@@ -11,6 +11,11 @@ type DocumentHandle struct {
 	repo *Repo
 }
 
+// DocID returns the ID of the document.
+func (h *DocumentHandle) DocID() DocumentID {
+	return h.doc.ID
+}
+
 // Save writes any new changes to the document to the repo's store.
 // It uses an incremental save strategy, and will automatically compact
 // the document after a certain number of changes.

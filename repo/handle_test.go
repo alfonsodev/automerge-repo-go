@@ -138,6 +138,9 @@ func ExampleRepoHandle() {
 		panic(err)
 	}
 
+	// Give the sync message time to be processed.
+	time.Sleep(100 * time.Millisecond)
+
 	// Get the document on the second repo.
 	doc2, ok := h2.Repo.GetDoc(doc.ID)
 	if !ok {

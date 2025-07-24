@@ -82,6 +82,29 @@ func (d *Document) Get(key string) (interface{}, bool) {
 	return v, true
 }
 
+// Map returns the document's contents as a map.
+func (d *Document) Map() (map[string]interface{}, error) {
+	if d.doc == nil {
+		return nil, nil
+	}
+	m := make(map[string]interface{})
+	keys, err := d.doc.RootMap().Keys()
+	if err != nil {
+		return nil, err
+	}
+	for _, k := range keys {
+		v, err := d.doc.RootMap().Get(k)
+		if err != nil {
+			return nil, err
+		}
+		m[k], err = automerge.As[interface{}](v)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return m, nil
+}
+
 // Repo holds a collection of documents, manages storage, and handles peer connections.
 type Repo struct {
 	ID          RepoID
