@@ -55,9 +55,12 @@ future development.
 - Handshake helpers now accept a `context.Context` to allow timeouts.
   - `Connect`, `DialWebSocket` and `Handshake` updated along with all callers
     and unit tests.
+- Added `ConnComplete` to signal when peer goroutines exit.
+  - `RepoHandle.AddConn` now returns a completion handle.
+  - Added unit test `TestRepoHandleConnComplete` verifying the signal.
 
 ## Missing / Next Steps
-- Document handles and reconnection logic remain to be implemented.
+- Reconnection logic remains to be implemented.
 - Review connection loops and continue improving error propagation similar to the Rust `ConnComplete` API.
 - More comprehensive usage examples would be helpful.
 - Consider automating GitHub releases in the future.

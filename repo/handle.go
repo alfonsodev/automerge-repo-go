@@ -54,8 +54,18 @@ func (h *RepoHandle) emitEvent(e HandleEvent) {
 	h.Events <- e
 }
 
+// ConnComplete is returned by AddConn and resolves when the connection
+// goroutine exits. The error value indicates why the connection finished.
+type ConnComplete struct{ ch <-chan error }
+
+// Await blocks until the connection has completed and returns the reason.
+func (c ConnComplete) Await() error {
+	return <-c.ch
+}
+
 type peerInfo struct {
 	conn       Conn
+	complete   chan error
 	syncStates map[DocumentID]*automerge.SyncState
 }
 
@@ -70,23 +80,28 @@ func NewRepoHandle(r *Repo) *RepoHandle {
 }
 
 // AddConn registers a connection to a remote peer and starts a goroutine to
-// forward its messages onto the handle's Inbox channel.
-func (h *RepoHandle) AddConn(remote RepoID, c Conn) {
+// forward its messages onto the handle's Inbox channel. It returns a
+// ConnComplete that resolves when the connection goroutine exits.
+func (h *RepoHandle) AddConn(remote RepoID, c Conn) ConnComplete {
 	h.mu.Lock()
 	if h.peers == nil {
 		h.peers = make(map[RepoID]*peerInfo)
 	}
-	h.peers[remote] = &peerInfo{conn: c, syncStates: make(map[DocumentID]*automerge.SyncState)}
+	done := make(chan error, 1)
+	h.peers[remote] = &peerInfo{conn: c, complete: done, syncStates: make(map[DocumentID]*automerge.SyncState)}
 	h.mu.Unlock()
 
-	go h.readLoop(remote, c)
+	go h.readLoop(remote, c, done)
 	h.emitEvent(HandleEvent{Type: EventPeerConnected, Peer: remote})
+	return ConnComplete{ch: done}
 }
 
 // readLoop continuously receives messages from c and publishes them to Inbox.
-func (h *RepoHandle) readLoop(remote RepoID, c Conn) {
+func (h *RepoHandle) readLoop(remote RepoID, c Conn, done chan error) {
+	var err error
 	for {
-		msg, err := c.RecvMessage()
+		var msg RepoMessage
+		msg, err = c.RecvMessage()
 		if err != nil {
 			h.emitEvent(HandleEvent{Type: EventConnError, Peer: remote, Err: err})
 			break
@@ -98,6 +113,8 @@ func (h *RepoHandle) readLoop(remote RepoID, c Conn) {
 		h.Inbox <- msg
 	}
 	h.RemoveConn(remote)
+	done <- err
+	close(done)
 }
 
 // RemoveConn closes and deletes the connection associated with the peer.

@@ -3,6 +3,7 @@ package repo
 import (
 	"fmt"
 	"io"
+	"sync"
 	"testing"
 	"time"
 )
@@ -11,11 +12,13 @@ import (
 type mockConn struct {
 	sendCh chan RepoMessage
 	recvCh chan RepoMessage
+	once   sync.Once
 }
 
 // sendErrConn fails on SendMessage but otherwise behaves like an idle connection.
 type sendErrConn struct {
 	recvCh chan RepoMessage
+	once   sync.Once
 }
 
 func newSendErrConn() *sendErrConn {
@@ -32,7 +35,10 @@ func (c *sendErrConn) RecvMessage() (RepoMessage, error) {
 	return msg, nil
 }
 
-func (c *sendErrConn) Close() error { close(c.recvCh); return nil }
+func (c *sendErrConn) Close() error {
+	c.once.Do(func() { close(c.recvCh) })
+	return nil
+}
 
 func newMockConn() (*mockConn, *mockConn) {
 	c1 := &mockConn{sendCh: make(chan RepoMessage, 1), recvCh: make(chan RepoMessage, 1)}
@@ -54,7 +60,7 @@ func (c *mockConn) RecvMessage() (RepoMessage, error) {
 }
 
 func (c *mockConn) Close() error {
-	close(c.sendCh)
+	c.once.Do(func() { close(c.sendCh) })
 	return nil
 }
 
@@ -63,8 +69,8 @@ func TestRepoHandleMessageForwarding(t *testing.T) {
 	h2 := NewRepoHandle(New())
 
 	c1, c2 := newMockConn()
-	h1.AddConn(h2.Repo.ID, c1)
-	h2.AddConn(h1.Repo.ID, c2)
+	_ = h1.AddConn(h2.Repo.ID, c1)
+	_ = h2.AddConn(h1.Repo.ID, c2)
 
 	msg := RepoMessage{Type: "ephemeral", FromRepoID: h1.Repo.ID, ToRepoID: h2.Repo.ID}
 	if err := h1.SendMessage(h2.Repo.ID, msg); err != nil {
@@ -89,7 +95,7 @@ func TestRepoHandleSendErrorEvent(t *testing.T) {
 	remoteID := New().ID
 
 	c := newSendErrConn()
-	h.AddConn(remoteID, c)
+	_ = h.AddConn(remoteID, c)
 
 	if evt := <-h.Events; evt.Type != EventPeerConnected || evt.Peer != remoteID {
 		t.Fatalf("expected peer connected event, got %#v", evt)

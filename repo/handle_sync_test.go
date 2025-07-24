@@ -14,8 +14,8 @@ func TestRepoHandleSync(t *testing.T) {
 	h2 := NewRepoHandle(New())
 
 	c1, c2 := newMockConn()
-	h1.AddConn(h2.Repo.ID, c1)
-	h2.AddConn(h1.Repo.ID, c2)
+	_ = h1.AddConn(h2.Repo.ID, c1)
+	_ = h2.AddConn(h1.Repo.ID, c2)
 
 	doc1 := h1.Repo.NewDoc()
 	if err := doc1.Set("k", "v"); err != nil {
