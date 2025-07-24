@@ -80,7 +80,7 @@ work needed in this phase:
   - [x] Allow optional reconnection attempts via callbacks or a retry policy.
   - [x] Extend tests in `repo/handle_events_test.go` to verify reconnection or
     completion events.
-- [ ] **Add multi-peer integration tests**
+- [x] **Add multi-peer integration tests**
   - Create tests under `repo/` that run multiple `RepoHandle` instances
     connected via TCP or WebSockets.
   - Verify document changes propagate across all peers and lifecycle events are
