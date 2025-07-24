@@ -15,8 +15,10 @@ cancel the operation.
 Basic document persistence is available using `repo.FsStore` and documents
 internally use the [automerge-go](https://github.com/automerge/automerge-go)
 library. Documents can be accessed through `DocumentHandle` which provides
-a simple change notification API. The program under `cmd/example` provides a
-small CLI for creating and editing documents stored on disk.
+a simple change notification API. When a repository has a store configured,
+mutating a `DocumentHandle` will automatically save the updated document to
+disk. The program under `cmd/example` provides a small CLI for creating and
+editing documents stored on disk.
 
 Run it with:
 

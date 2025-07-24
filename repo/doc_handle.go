@@ -7,7 +7,16 @@ import (
 // DocumentHandle provides access to a document along with a mechanism
 // to wait for changes.
 type DocumentHandle struct {
-	doc *Document
+	doc  *Document
+	repo *Repo
+}
+
+// Save writes the document to the repo's store if one is configured.
+func (h *DocumentHandle) Save() error {
+	if h.repo == nil || h.repo.store == nil {
+		return nil
+	}
+	return h.repo.SaveDoc(h.doc.ID)
 }
 
 // Changed returns a channel that will receive a single notification when
@@ -29,17 +38,22 @@ func (h *DocumentHandle) WithDocMut(f func(*automerge.Doc) error) error {
 	if err := f(h.doc.doc); err != nil {
 		return err
 	}
-	_, err := h.doc.doc.Commit("update")
-	if err == nil {
-		h.doc.notifyWatchers()
+	if _, err := h.doc.doc.Commit("update"); err != nil {
+		return err
 	}
-	return err
+	h.doc.notifyWatchers()
+	if h.repo != nil && h.repo.store != nil {
+		if err := h.repo.SaveDoc(h.doc.ID); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // NewDocHandle creates a new document and returns a handle to it.
 func (r *Repo) NewDocHandle() *DocumentHandle {
 	doc := r.NewDoc()
-	return &DocumentHandle{doc: doc}
+	return &DocumentHandle{doc: doc, repo: r}
 }
 
 // GetDocHandle returns a handle for the document with the given id.
@@ -48,7 +62,7 @@ func (r *Repo) GetDocHandle(id DocumentID) (*DocumentHandle, bool) {
 	if !ok {
 		return nil, false
 	}
-	return &DocumentHandle{doc: d}, true
+	return &DocumentHandle{doc: d, repo: r}, true
 }
 
 // --- internal helpers on Document ---

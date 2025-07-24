@@ -65,9 +65,13 @@ future development.
 - Introduced `DocumentHandle` with change notification support.
   - Allows callers to wait for document updates using `Changed`.
   - `README.md` and package docs updated to mention the new handle type.
+- DocumentHandle now persists changes automatically when a Repo has a
+  store configured.
+  - Added unit test `TestDocumentHandleAutoSave` verifying saved data.
 
 ## Missing / Next Steps
 - Review connection loops and continue improving error propagation similar to the Rust `ConnComplete` API.
 - More comprehensive usage examples would be helpful.
 - Consider automating GitHub releases in the future.
-- Expand `DocumentHandle` with persistence hooks and better integration with `RepoHandle`.
+- Expand `DocumentHandle` integration with `RepoHandle` and add more
+  persistence features such as snapshot compaction.
