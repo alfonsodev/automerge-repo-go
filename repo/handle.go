@@ -2,6 +2,7 @@ package repo
 
 import (
 	"fmt"
+	"io"
 	"sync"
 
 	automerge "github.com/automerge/automerge-go"
@@ -19,6 +20,24 @@ const (
 	EventPeerDisconnected = "peer_disconnected"
 	EventConnError        = "conn_error"
 )
+
+// ConnFinishedReason describes why a connection goroutine ended.
+type ConnFinishedReason string
+
+const (
+	// ConnFinishedTheyDisconnected indicates the remote side closed the connection.
+	ConnFinishedTheyDisconnected ConnFinishedReason = "they_disconnected"
+	// ConnFinishedErrorReceiving indicates RecvMessage returned an error.
+	ConnFinishedErrorReceiving ConnFinishedReason = "error_receiving"
+)
+
+// ConnComplete resolves when a connection loop exits.
+type ConnComplete struct{ ch chan ConnFinishedReason }
+
+func newConnComplete() *ConnComplete { return &ConnComplete{ch: make(chan ConnFinishedReason, 1)} }
+
+// Wait blocks until the connection finishes.
+func (c *ConnComplete) Wait() ConnFinishedReason { return <-c.ch }
 
 // Conn abstracts a bidirectional channel capable of sending and receiving
 // RepoMessage values. LPConn and WSConn satisfy this interface.
@@ -57,6 +76,8 @@ func (h *RepoHandle) emitEvent(e HandleEvent) {
 type peerInfo struct {
 	conn       Conn
 	syncStates map[DocumentID]*automerge.SyncState
+	retry      func() (Conn, error)
+	complete   *ConnComplete
 }
 
 // NewRepoHandle wraps r with connection management and returns the handle.
@@ -71,25 +92,39 @@ func NewRepoHandle(r *Repo) *RepoHandle {
 
 // AddConn registers a connection to a remote peer and starts a goroutine to
 // forward its messages onto the handle's Inbox channel.
-func (h *RepoHandle) AddConn(remote RepoID, c Conn) {
+func (h *RepoHandle) AddConn(remote RepoID, c Conn) *ConnComplete {
+	return h.AddConnWithRetry(remote, c, nil)
+}
+
+// AddConnWithRetry registers a connection to a remote peer and starts a goroutine
+// to forward its messages onto the handle's Inbox channel. When the connection
+// loop exits the returned ConnComplete resolves. If retry is non-nil it will be
+// invoked to obtain a replacement connection.
+func (h *RepoHandle) AddConnWithRetry(remote RepoID, c Conn, retry func() (Conn, error)) *ConnComplete {
 	h.mu.Lock()
 	if h.peers == nil {
 		h.peers = make(map[RepoID]*peerInfo)
 	}
-	h.peers[remote] = &peerInfo{conn: c, syncStates: make(map[DocumentID]*automerge.SyncState)}
+	cc := newConnComplete()
+	pi := &peerInfo{conn: c, syncStates: make(map[DocumentID]*automerge.SyncState), retry: retry, complete: cc}
+	h.peers[remote] = pi
 	h.mu.Unlock()
 
-	go h.readLoop(remote, c)
+	go h.connLoop(remote, pi)
 	h.emitEvent(HandleEvent{Type: EventPeerConnected, Peer: remote})
+	return cc
 }
 
 // readLoop continuously receives messages from c and publishes them to Inbox.
-func (h *RepoHandle) readLoop(remote RepoID, c Conn) {
+func (h *RepoHandle) readLoop(remote RepoID, c Conn) ConnFinishedReason {
 	for {
 		msg, err := c.RecvMessage()
 		if err != nil {
 			h.emitEvent(HandleEvent{Type: EventConnError, Peer: remote, Err: err})
-			break
+			if err == io.EOF {
+				return ConnFinishedTheyDisconnected
+			}
+			return ConnFinishedErrorReceiving
 		}
 		if msg.Type == "sync" {
 			h.handleSyncMessage(remote, msg)
@@ -97,7 +132,29 @@ func (h *RepoHandle) readLoop(remote RepoID, c Conn) {
 		}
 		h.Inbox <- msg
 	}
-	h.RemoveConn(remote)
+}
+
+// connLoop runs readLoop and handles optional reconnection attempts. The loop
+// exits when no retry function is provided or it returns an error.
+func (h *RepoHandle) connLoop(remote RepoID, pi *peerInfo) {
+	for {
+		reason := h.readLoop(remote, pi.conn)
+		if pi.retry != nil {
+			newConn, err := pi.retry()
+			if err == nil && newConn != nil {
+				_ = pi.conn.Close()
+				pi.conn = newConn
+				h.emitEvent(HandleEvent{Type: EventPeerConnected, Peer: remote})
+				continue
+			}
+		}
+		h.RemoveConn(remote)
+		if pi.complete != nil {
+			pi.complete.ch <- reason
+			close(pi.complete.ch)
+		}
+		return
+	}
 }
 
 // RemoveConn closes and deletes the connection associated with the peer.

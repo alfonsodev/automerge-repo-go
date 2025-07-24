@@ -52,3 +52,27 @@ func TestRepoHandleConnErrorEvent(t *testing.T) {
 	h1.Close()
 	h2.Close()
 }
+
+func TestRepoHandleConnComplete(t *testing.T) {
+	h1 := NewRepoHandle(New())
+	h2 := NewRepoHandle(New())
+
+	c1, c2 := newMockConn()
+
+	cc := h1.AddConn(h2.Repo.ID, c1)
+	if evt := <-h1.Events; evt.Type != EventPeerConnected || evt.Peer != h2.Repo.ID {
+		t.Fatalf("expected peer connected event, got %#v", evt)
+	}
+
+	c2.Close()
+
+	<-h1.Events // conn_error
+	<-h1.Events // peer_disconnected
+
+	if reason := cc.Wait(); reason != ConnFinishedTheyDisconnected {
+		t.Fatalf("unexpected reason: %v", reason)
+	}
+
+	h1.Close()
+	h2.Close()
+}

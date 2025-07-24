@@ -55,9 +55,13 @@ future development.
 - Handshake helpers now accept a `context.Context` to allow timeouts.
   - `Connect`, `DialWebSocket` and `Handshake` updated along with all callers
     and unit tests.
+- Added `ConnComplete` type and retry support in `RepoHandle`.
+  - `AddConn` now returns a completion handle and optional reconnection can be
+    provided via `AddConnWithRetry`.
+  - New test `TestRepoHandleConnComplete` verifies completion delivery.
 
 ## Missing / Next Steps
-- Document handles and reconnection logic remain to be implemented.
-- Review connection loops and continue improving error propagation similar to the Rust `ConnComplete` API.
+- Document handles remain to be implemented.
+- Continue improving reconnection behaviour and parity with the Rust `ConnComplete` API.
 - More comprehensive usage examples would be helpful.
 - Consider automating GitHub releases in the future.
