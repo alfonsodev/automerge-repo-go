@@ -11,3 +11,5 @@ rust/Cargo.lock
 bin/
 *.exe
 
+cmd/example/data/ data/
+data/
