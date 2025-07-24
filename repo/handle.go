@@ -17,9 +17,12 @@ type HandleEvent struct {
 }
 
 const (
-	EventPeerConnected    = "peer_connected"
+	// EventPeerConnected is emitted when a new peer is connected.
+	EventPeerConnected = "peer_connected"
+	// EventPeerDisconnected is emitted when a peer disconnects.
 	EventPeerDisconnected = "peer_disconnected"
-	EventConnError        = "conn_error"
+	// EventConnError is emitted when a connection error occurs.
+	EventConnError = "conn_error"
 )
 
 // Conn abstracts a bidirectional channel capable of sending and receiving
@@ -32,7 +35,7 @@ type Conn interface {
 
 // RepoHandle manages a Repo along with its active peer connections. It
 // spawns goroutines for each connection that forward incoming messages
-// onto the Inbox channel.
+// onto the Inbox channel. It is the primary way to interact with the network.
 type RepoHandle struct {
 	Repo *Repo
 
@@ -60,11 +63,11 @@ func (h *RepoHandle) emitEvent(e HandleEvent) {
 type ConnFinishedKind int
 
 const (
-	// The connection ended because a receive operation failed.
+	// ConnFinishedRecvError indicates the connection ended because a receive operation failed.
 	ConnFinishedRecvError ConnFinishedKind = iota
-	// The connection ended because a send operation failed.
+	// ConnFinishedSendError indicates the connection ended because a send operation failed.
 	ConnFinishedSendError
-	// The connection was closed locally via RemoveConn.
+	// ConnFinishedLocalClose indicates the connection was closed locally via RemoveConn.
 	ConnFinishedLocalClose
 )
 

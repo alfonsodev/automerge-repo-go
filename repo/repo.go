@@ -19,6 +19,9 @@ type Document struct {
 	ID  DocumentID
 	doc *automerge.Doc
 
+	lastHeads           []automerge.ChangeHash
+	changesSinceCompact int
+
 	watchers   []chan struct{}
 	watchersMu sync.Mutex
 }
@@ -61,6 +64,7 @@ func (d *Document) Set(key string, value interface{}) error {
 	}
 	_, err := d.doc.Commit("set")
 	if err == nil {
+		d.changesSinceCompact++
 		d.notifyWatchers()
 	}
 	return err
@@ -78,7 +82,7 @@ func (d *Document) Get(key string) (interface{}, bool) {
 	return v, true
 }
 
-// Repo holds a collection of documents.
+// Repo holds a collection of documents, manages storage, and handles peer connections.
 type Repo struct {
 	ID          RepoID
 	docs        map[DocumentID]*Document
@@ -115,7 +119,21 @@ func (r *Repo) GetDoc(id DocumentID) (*Document, bool) {
 	return d, ok
 }
 
+// CompactDoc writes a full snapshot of the document to disk.
+func (r *Repo) CompactDoc(id DocumentID) error {
+	if r.store == nil {
+		return fmt.Errorf("no store configured")
+	}
+	doc, ok := r.docs[id]
+	if !ok {
+		return fmt.Errorf("document %s not found", id)
+	}
+	doc.changesSinceCompact = 0
+	return r.store.Compact(doc)
+}
+
 // SaveDoc writes a document to disk using the repo's store.
+// It will append changes incrementally and compact the document every 10 changes.
 func (r *Repo) SaveDoc(id DocumentID) error {
 	if r.store == nil {
 		return fmt.Errorf("no store configured")
@@ -123,6 +141,9 @@ func (r *Repo) SaveDoc(id DocumentID) error {
 	doc, ok := r.docs[id]
 	if !ok {
 		return fmt.Errorf("document %s not found", id)
+	}
+	if doc.changesSinceCompact >= 10 {
+		return r.CompactDoc(id)
 	}
 	return r.store.Save(doc)
 }

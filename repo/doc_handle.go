@@ -5,18 +5,29 @@ import (
 )
 
 // DocumentHandle provides access to a document along with a mechanism
-// to wait for changes.
+// to wait for changes. It is the primary way to interact with a document.
 type DocumentHandle struct {
 	doc  *Document
 	repo *Repo
 }
 
-// Save writes the document to the repo's store if one is configured.
+// Save writes any new changes to the document to the repo's store.
+// It uses an incremental save strategy, and will automatically compact
+// the document after a certain number of changes.
 func (h *DocumentHandle) Save() error {
 	if h.repo == nil || h.repo.store == nil {
 		return nil
 	}
 	return h.repo.SaveDoc(h.doc.ID)
+}
+
+// Compact writes a full snapshot of the document to the repo's store.
+// This is useful for reducing the size of the document file on disk.
+func (h *DocumentHandle) Compact() error {
+	if h.repo == nil || h.repo.store == nil {
+		return nil
+	}
+	return h.repo.CompactDoc(h.doc.ID)
 }
 
 // Changed returns a channel that will receive a single notification when
@@ -26,6 +37,7 @@ func (h *DocumentHandle) Changed() <-chan struct{} {
 }
 
 // WithDoc runs f with the underlying Automerge document.
+// This is useful for reading data from the document.
 func (h *DocumentHandle) WithDoc(f func(*automerge.Doc)) {
 	h.doc.ensureDoc()
 	f(h.doc.doc)
@@ -42,11 +54,6 @@ func (h *DocumentHandle) WithDocMut(f func(*automerge.Doc) error) error {
 		return err
 	}
 	h.doc.notifyWatchers()
-	if h.repo != nil && h.repo.store != nil {
-		if err := h.repo.SaveDoc(h.doc.ID); err != nil {
-			return err
-		}
-	}
 	return nil
 }
 

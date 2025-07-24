@@ -4,7 +4,9 @@ package repo
 type ShareDecision int
 
 const (
+	// Share indicates that the document should be shared.
 	Share ShareDecision = iota
+	// DontShare indicates that the document should not be shared.
 	DontShare
 )
 
@@ -22,6 +24,11 @@ type SharePolicy interface {
 // PermissiveSharePolicy always allows sharing.
 type PermissiveSharePolicy struct{}
 
-func (PermissiveSharePolicy) ShouldSync(DocumentID, RepoID) ShareDecision     { return Share }
-func (PermissiveSharePolicy) ShouldRequest(DocumentID, RepoID) ShareDecision  { return Share }
+// ShouldSync always returns Share.
+func (PermissiveSharePolicy) ShouldSync(DocumentID, RepoID) ShareDecision { return Share }
+
+// ShouldRequest always returns Share.
+func (PermissiveSharePolicy) ShouldRequest(DocumentID, RepoID) ShareDecision { return Share }
+
+// ShouldAnnounce always returns Share.
 func (PermissiveSharePolicy) ShouldAnnounce(DocumentID, RepoID) ShareDecision { return Share }

@@ -118,3 +118,34 @@ func TestRepoHandleSendErrorEvent(t *testing.T) {
 
 	h.Close()
 }
+
+func ExampleRepoHandle() {
+	// Create two repos and corresponding handles.
+	h1 := NewRepoHandle(New())
+	h2 := NewRepoHandle(New())
+
+	// Create an in-memory connection between them.
+	c1, c2 := newMockConn()
+	_ = h1.AddConn(h2.Repo.ID, c1)
+	_ = h2.AddConn(h1.Repo.ID, c2)
+
+	// Create a document on the first repo.
+	doc := h1.Repo.NewDoc()
+	doc.Set("foo", "bar")
+
+	// Sync the document to the second repo.
+	if err := h1.SyncAll(h2.Repo.ID); err != nil {
+		panic(err)
+	}
+
+	// Get the document on the second repo.
+	doc2, ok := h2.Repo.GetDoc(doc.ID)
+	if !ok {
+		panic("document not found")
+	}
+
+	// Read the value.
+	val, _ := doc2.Get("foo")
+	fmt.Println(val)
+	// Output: bar
+}

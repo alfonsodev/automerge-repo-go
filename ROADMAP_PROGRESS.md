@@ -80,11 +80,21 @@ future development.
   - SharePolicy now also controls document requests and announcements.
     `RepoHandle` consults `ShouldRequest` and `ShouldAnnounce` and tests cover
     these paths.
+- Implemented incremental saves and compaction in `FsStore`.
+  - `FsStore.Save` now appends changes incrementally.
+  - `FsStore.Compact` writes a full snapshot of the document.
+  - `Repo.SaveDoc` uses a simple compaction strategy to automatically compact after a number of changes.
+- Refactored `DocumentHandle` to give users more control over persistence.
+  - `WithDocMut` no longer saves automatically.
+  - Added `Compact()` method to `DocumentHandle`.
+  - Updated tests to reflect the new API.
+- Fixed a failing test in `cmd/tcp-example` by simulating a client-server interaction.
 
 ## Missing / Next Steps
 - More comprehensive usage examples would be helpful.
 - Consider automating GitHub releases in the future.
-- Expand `DocumentHandle` integration with `RepoHandle` and add more
-  persistence features such as snapshot compaction.
+- The storage layer is now much closer to the Rust implementation, but does not yet implement the splayed directory structure for performance. This could be a future improvement.
+- ~~Expand `DocumentHandle` integration with `RepoHandle` and add more
+  persistence features such as snapshot compaction.~~ (done)
 - ~~Extend `SharePolicy` with request and announcement checks to fully match the
   Rust implementation.~~ (done)

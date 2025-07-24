@@ -89,6 +89,24 @@ in `.github/workflows/go.yml`. The workflow runs `go vet` and `go test` on
 Linux, macOS and Windows using the latest Go releases.
 
 
+## Documentation
+
+The full documentation for the `repo` package is available on [pkg.go.dev](https://pkg.go.dev/github.com/example/automerge-repo-go/repo).
+
+You can also view the documentation locally using the `godoc` tool.
+If you don't have `godoc` installed, you can get it by running:
+```bash
+go install golang.org/x/tools/cmd/godoc@latest
+```
+*Note: Ensure that your Go bin directory (e.g., `$GOPATH/bin` or `$HOME/go/bin`) is in your system's `PATH`.*
+
+Once installed, run the following command in the root of the repository to start the documentation server:
+```bash
+godoc -http=:6060
+```
+
+Then, open your browser to [http://localhost:6060/pkg/github.com/example/automerge-repo-go/repo](http://localhost:6060/pkg/github.com/example/automerge-repo-go/repo).
+
 ## Release process
 
 Releases are tagged using semantic versions. The `scripts/release.sh` helper

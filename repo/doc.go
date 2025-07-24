@@ -1,33 +1,25 @@
-package repo
+/*
+Package repo provides a Go implementation of the Automerge Repo protocol.
+It allows for creating, managing, and synchronizing Automerge documents between
+multiple peers over a network.
 
-// Package repo provides a minimal Automerge repository implementation in Go.
-//
-// The Repo type manages a set of Automerge documents. Documents can be
-// persisted to disk using FsStore and synchronised with remote peers using
-// RepoHandle and network connectors. Documents can also be accessed through
-// DocumentHandle which exposes helper methods and a simple change
-// notification mechanism. When created via Repo methods the handle
-// will automatically persist changes using the repo's store if one is
-// configured. Repositories can be configured with a SharePolicy that
-// determines whether documents are synchronised with particular peers and
-// may also veto announcements or requests for specific documents.
-//
-// A simple TCP connector and WebSocket helpers are available to establish
-// connections between repositories. Messages exchanged between peers use the
-// CBOR encoding defined by the Automerge Repo specification.
-//
-// Example usage:
-//
-//  store := &repo.FsStore{Dir: "data"}
-//  r := repo.NewWithStore(store)
-//  doc := r.NewDoc()
-//  _ = doc.Set("key", "value")
-//  _ = r.SaveDoc(doc.ID)
-//
-// For peer-to-peer sync, create a RepoHandle for your Repo, then connect to
-// another peer using repo.Connect or the WebSocket helpers. These functions
-// now take a context so callers can enforce timeouts. The handle will forward
-// received messages on its Inbox channel and can broadcast document updates via
-// SyncAll.
-//
-// See the programs under cmd/ for concrete examples.
+The main components of this package are:
+
+- Repo: A collection of documents that can be persisted to storage.
+
+- RepoHandle: Manages peer connections and handles the synchronization of
+documents. It uses a pluggable networking model, with TCP and WebSocket
+connectors provided.
+
+- DocumentHandle: The primary way to interact with a single Automerge document.
+It provides methods for reading, mutating, and saving the document, as well as
+a mechanism to watch for changes.
+
+A typical usage pattern involves:
+ 1. Creating a Repo, optionally with an FsStore for persistence.
+ 2. Creating or loading a DocumentHandle from the Repo.
+ 3. Using the DocumentHandle to read or modify the document.
+ 4. Creating a RepoHandle to manage network connections.
+ 5. Connecting to peers and using the RepoHandle to synchronize documents.
+*/
+package repo
