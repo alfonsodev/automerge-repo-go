@@ -62,7 +62,7 @@ func main() {
 						c.Close()
 						return
 					}
-					handle.AddConn(remote, lp)
+					_ = handle.AddConn(remote, lp)
 					mu.Lock()
 					peers = append(peers, remote)
 					mu.Unlock()
@@ -85,7 +85,7 @@ func main() {
 			fmt.Println("handshake error:", err)
 			return
 		}
-		handle.AddConn(remote, lp)
+		_ = handle.AddConn(remote, lp)
 		mu.Lock()
 		peers = append(peers, remote)
 		mu.Unlock()
