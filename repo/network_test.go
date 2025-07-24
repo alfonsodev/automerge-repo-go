@@ -1,8 +1,10 @@
 package repo
 
 import (
+	"context"
 	"net"
 	"testing"
+	"time"
 )
 
 func TestHandshake(t *testing.T) {
@@ -10,7 +12,9 @@ func TestHandshake(t *testing.T) {
 	repo1 := New()
 	repo2 := New()
 
-	r1, r2, err := handshakePipe(c1, Outgoing, repo1.ID, c2, Incoming, repo2.ID)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	r1, r2, err := handshakePipe(ctx, c1, Outgoing, repo1.ID, c2, Incoming, repo2.ID)
 	if err != nil {
 		t.Fatalf("handshake error: %v", err)
 	}

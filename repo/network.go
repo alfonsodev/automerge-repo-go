@@ -2,9 +2,11 @@ package repo
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"io"
 	"sync"
+	"time"
 
 	"github.com/fxamacker/cbor/v2"
 	"github.com/google/uuid"
@@ -25,7 +27,14 @@ type handshakeMessage struct {
 
 // Handshake performs a simple join/peer handshake over the given connection.
 // It returns the remote repository ID after the handshake completes.
-func Handshake(rw io.ReadWriter, id RepoID, dir ConnDirection) (RepoID, error) {
+func Handshake(ctx context.Context, rw io.ReadWriter, id RepoID, dir ConnDirection) (RepoID, error) {
+	if conn, ok := rw.(interface{ SetDeadline(time.Time) error }); ok {
+		if d, ok := ctx.Deadline(); ok {
+			_ = conn.SetDeadline(d)
+			defer conn.SetDeadline(time.Time{})
+		}
+	}
+
 	enc := cbor.NewEncoder(rw)
 	dec := cbor.NewDecoder(bufio.NewReader(rw))
 	switch dir {
@@ -68,7 +77,7 @@ func Handshake(rw io.ReadWriter, id RepoID, dir ConnDirection) (RepoID, error) {
 
 // handshakePipe is a helper for tests that connects two sides of a net.Pipe and
 // runs Handshake concurrently.
-func handshakePipe(c1 io.ReadWriter, dir1 ConnDirection, id1 RepoID, c2 io.ReadWriter, dir2 ConnDirection, id2 RepoID) (RepoID, RepoID, error) {
+func handshakePipe(ctx context.Context, c1 io.ReadWriter, dir1 ConnDirection, id1 RepoID, c2 io.ReadWriter, dir2 ConnDirection, id2 RepoID) (RepoID, RepoID, error) {
 	var wg sync.WaitGroup
 	var r1 RepoID
 	var e1 error
@@ -77,11 +86,11 @@ func handshakePipe(c1 io.ReadWriter, dir1 ConnDirection, id1 RepoID, c2 io.ReadW
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		r1, e1 = Handshake(c1, id1, dir1)
+		r1, e1 = Handshake(ctx, c1, id1, dir1)
 	}()
 	go func() {
 		defer wg.Done()
-		r2, e2 = Handshake(c2, id2, dir2)
+		r2, e2 = Handshake(ctx, c2, id2, dir2)
 	}()
 	wg.Wait()
 	if e1 != nil {

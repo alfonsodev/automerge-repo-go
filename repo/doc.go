@@ -19,8 +19,9 @@ package repo
 //  _ = r.SaveDoc(doc.ID)
 //
 // For peer-to-peer sync, create a RepoHandle for your Repo, then connect to
-// another peer using repo.Connect or the WebSocket helpers. The handle will
-// forward received messages on its Inbox channel and can broadcast document
-// updates via SyncAll.
+// another peer using repo.Connect or the WebSocket helpers. These functions
+// now take a context so callers can enforce timeouts. The handle will forward
+// received messages on its Inbox channel and can broadcast document updates via
+// SyncAll.
 //
 // See the programs under cmd/ for concrete examples.

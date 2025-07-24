@@ -68,7 +68,7 @@ Following an initial code review the project should address several issues
 around network reliability, testing and documentation. The tasks below outline
 work needed in this phase:
 
-- [ ] **Add context-aware handshake helpers**
+- [x] **Add context-aware handshake helpers**
   - Modify `repo.Handshake`, `repo.Connect` and `repo.DialWebSocket` to accept
     a `context.Context`.
   - Use deadlines or context cancellation to abort the handshake if it times

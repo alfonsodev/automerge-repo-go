@@ -2,12 +2,14 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"flag"
 	"fmt"
 	"net"
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/example/automerge-repo-go/repo"
 )
@@ -52,7 +54,9 @@ func main() {
 					continue
 				}
 				go func(c net.Conn) {
-					lp, remote, err := repo.Connect(c, handle.Repo.ID, repo.Incoming)
+					ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+					defer cancel()
+					lp, remote, err := repo.Connect(ctx, c, handle.Repo.ID, repo.Incoming)
 					if err != nil {
 						fmt.Println("handshake error:", err)
 						c.Close()
@@ -74,7 +78,9 @@ func main() {
 			fmt.Println("dial error:", err)
 			return
 		}
-		lp, remote, err := repo.Connect(conn, handle.Repo.ID, repo.Outgoing)
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		lp, remote, err := repo.Connect(ctx, conn, handle.Repo.ID, repo.Outgoing)
 		if err != nil {
 			fmt.Println("handshake error:", err)
 			return

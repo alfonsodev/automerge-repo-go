@@ -1,10 +1,12 @@
 package repo
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -29,7 +31,9 @@ func TestWebSocketHandshake(t *testing.T) {
 
 	wsURL := "ws" + strings.TrimPrefix(srv.URL, "http")
 
-	conn, remoteFromClient, err := DialWebSocket(wsURL, clientRepo.ID)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	conn, remoteFromClient, err := DialWebSocket(ctx, wsURL, clientRepo.ID)
 	if err != nil {
 		t.Fatalf("dial error: %v", err)
 	}
@@ -69,7 +73,9 @@ func TestWSConnSendRecvMessage(t *testing.T) {
 
 	wsURL := "ws" + strings.TrimPrefix(srv.URL, "http")
 
-	conn, _, err := DialWebSocket(wsURL, clientRepo.ID)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	conn, _, err := DialWebSocket(ctx, wsURL, clientRepo.ID)
 	if err != nil {
 		t.Fatalf("dial error: %v", err)
 	}
