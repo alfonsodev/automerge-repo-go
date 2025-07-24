@@ -17,8 +17,10 @@ internally use the [automerge-go](https://github.com/automerge/automerge-go)
 library. Documents can be accessed through `DocumentHandle` which provides
 a simple change notification API. When a repository has a store configured,
 mutating a `DocumentHandle` will automatically save the updated document to
-disk. The program under `cmd/example` provides a small CLI for creating and
-editing documents stored on disk.
+disk. Repositories may also be configured with a `SharePolicy` to control
+which documents are synchronised with particular peers. The program under
+`cmd/example` provides a small CLI for creating and editing documents stored on
+disk.
 
 Run it with:
 

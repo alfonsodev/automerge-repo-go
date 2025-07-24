@@ -80,14 +80,19 @@ func (d *Document) Get(key string) (interface{}, bool) {
 
 // Repo holds a collection of documents.
 type Repo struct {
-	ID    RepoID
-	docs  map[DocumentID]*Document
-	store *FsStore
+	ID          RepoID
+	docs        map[DocumentID]*Document
+	store       *FsStore
+	sharePolicy SharePolicy
 }
 
 // New returns a new empty repository with a random identifier.
 func New() *Repo {
-	return &Repo{ID: uuid.New(), docs: make(map[DocumentID]*Document)}
+	return &Repo{
+		ID:          uuid.New(),
+		docs:        make(map[DocumentID]*Document),
+		sharePolicy: PermissiveSharePolicy{},
+	}
 }
 
 // NewWithStore creates a repository that will persist documents using the provided store.
@@ -133,4 +138,11 @@ func (r *Repo) LoadDoc(id DocumentID) (*Document, error) {
 	}
 	r.docs[id] = doc
 	return doc, nil
+}
+
+// WithSharePolicy returns a copy of the repo configured to use sp for
+// decisions about sharing documents with peers.
+func (r *Repo) WithSharePolicy(sp SharePolicy) *Repo {
+	r.sharePolicy = sp
+	return r
 }

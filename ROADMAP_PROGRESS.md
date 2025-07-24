@@ -73,8 +73,15 @@ future development.
   store configured.
   - Added unit test `TestDocumentHandleAutoSave` verifying saved data.
 
+- Implemented a basic `SharePolicy` interface for controlling which documents
+  are synchronised with peers.
+  - Default `PermissiveSharePolicy` always shares documents.
+  - Added unit test `TestSharePolicyBlocksSync` verifying policy behaviour.
+
 ## Missing / Next Steps
 - More comprehensive usage examples would be helpful.
 - Consider automating GitHub releases in the future.
 - Expand `DocumentHandle` integration with `RepoHandle` and add more
   persistence features such as snapshot compaction.
+- Extend `SharePolicy` with request and announcement checks to fully match the
+  Rust implementation.

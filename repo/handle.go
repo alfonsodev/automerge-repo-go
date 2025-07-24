@@ -263,6 +263,10 @@ func (h *RepoHandle) SyncDocument(remote RepoID, docID DocumentID) error {
 	pi, ok := h.peers[remote]
 	doc, docOK := h.Repo.GetDoc(docID)
 	if ok && docOK {
+		if h.Repo.sharePolicy != nil && h.Repo.sharePolicy.ShouldSync(docID, remote) == DontShare {
+			h.mu.Unlock()
+			return nil
+		}
 		state := pi.syncStates[docID]
 		if state == nil {
 			state = doc.NewSyncState()
@@ -293,6 +297,10 @@ func (h *RepoHandle) handleSyncMessage(remote RepoID, msg RepoMessage) {
 	h.mu.Lock()
 	pi, ok := h.peers[remote]
 	if !ok {
+		h.mu.Unlock()
+		return
+	}
+	if h.Repo.sharePolicy != nil && h.Repo.sharePolicy.ShouldSync(msg.DocumentID, remote) == DontShare {
 		h.mu.Unlock()
 		return
 	}
