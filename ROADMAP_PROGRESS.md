@@ -58,9 +58,10 @@ future development.
 - Added `ConnComplete` to signal when peer goroutines exit.
   - `RepoHandle.AddConn` now returns a completion handle.
   - Added unit test `TestRepoHandleConnComplete` verifying the signal.
+- Implemented automatic reconnection via `RepoHandle.AddConnWithRetry`.
+  - New test `TestRepoHandleReconnect` covers connection retry behaviour.
 
 ## Missing / Next Steps
-- Reconnection logic remains to be implemented.
 - Review connection loops and continue improving error propagation similar to the Rust `ConnComplete` API.
 - More comprehensive usage examples would be helpful.
 - Consider automating GitHub releases in the future.

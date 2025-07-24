@@ -1,8 +1,10 @@
 package repo
 
 import (
+	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	automerge "github.com/automerge/automerge-go"
 )
@@ -93,6 +95,45 @@ func (h *RepoHandle) AddConn(remote RepoID, c Conn) ConnComplete {
 
 	go h.readLoop(remote, c, done)
 	h.emitEvent(HandleEvent{Type: EventPeerConnected, Peer: remote})
+	return ConnComplete{ch: done}
+}
+
+// AddConnWithRetry repeatedly dials the remote using dial and registers the
+// connection with AddConn. If the connection closes with an error it will be
+// retried after delay until ctx is canceled. The returned ConnComplete resolves
+// when the retry loop exits.
+func (h *RepoHandle) AddConnWithRetry(ctx context.Context, remote RepoID, dial func(context.Context) (Conn, error), delay time.Duration) ConnComplete {
+	done := make(chan error, 1)
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				h.RemoveConn(remote)
+				done <- ctx.Err()
+				close(done)
+				return
+			default:
+			}
+
+			conn, err := dial(ctx)
+			if err != nil {
+				done <- err
+				close(done)
+				return
+			}
+			cc := h.AddConn(remote, conn)
+			_ = cc.Await()
+
+			select {
+			case <-ctx.Done():
+				h.RemoveConn(remote)
+				done <- ctx.Err()
+				close(done)
+				return
+			case <-time.After(delay):
+			}
+		}
+	}()
 	return ConnComplete{ch: done}
 }
 

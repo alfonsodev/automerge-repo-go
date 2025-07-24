@@ -74,11 +74,11 @@ work needed in this phase:
   - Use deadlines or context cancellation to abort the handshake if it times
     out.
   - Update callers and unit tests to pass a context with timeout.
-- [ ] **Implement connection completion/retry logic**
+- [x] **Implement connection completion/retry logic**
   - [x] Introduce a `ConnComplete`-style mechanism in `repo/handle.go` to signal
     when connection goroutines end.
-  - Allow optional reconnection attempts via callbacks or a retry policy.
-  - Extend tests in `repo/handle_events_test.go` to verify reconnection or
+  - [x] Allow optional reconnection attempts via callbacks or a retry policy.
+  - [x] Extend tests in `repo/handle_events_test.go` to verify reconnection or
     completion events.
 - [ ] **Add multi-peer integration tests**
   - Create tests under `repo/` that run multiple `RepoHandle` instances
