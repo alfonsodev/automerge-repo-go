@@ -62,6 +62,37 @@ API, improving reliability and providing tooling for real world use:
 5. [x] **Versioned releases** – once the API stabilises, tag releases and provide
    instructions for importing via Go modules.
 
+## Part 4: Review-based improvements
+
+Following an initial code review the project should address several issues
+around network reliability, testing and documentation. The tasks below outline
+work needed in this phase:
+
+- [ ] **Add context-aware handshake helpers**
+  - Modify `repo.Handshake`, `repo.Connect` and `repo.DialWebSocket` to accept
+    a `context.Context`.
+  - Use deadlines or context cancellation to abort the handshake if it times
+    out.
+  - Update callers and unit tests to pass a context with timeout.
+- [ ] **Implement connection completion/retry logic**
+  - Introduce a `ConnComplete`-style mechanism in `repo/handle.go` to signal
+    when connection goroutines end.
+  - Allow optional reconnection attempts via callbacks or a retry policy.
+  - Extend tests in `repo/handle_events_test.go` to verify reconnection or
+    completion events.
+- [ ] **Add multi-peer integration tests**
+  - Create tests under `repo/` that run multiple `RepoHandle` instances
+    connected via TCP or WebSockets.
+  - Verify document changes propagate across all peers and lifecycle events are
+    fired.
+  - Use the Rust `tests/` directory as a guide for expected behaviours.
+- [ ] **Reach feature parity with the Rust implementation**
+  - Implement snapshot compaction, document handles, share policy and remaining
+    network utilities.
+- [ ] **Improve package documentation**
+  - Provide higher level docs explaining repository usage and integration
+    patterns.
+
 ## Maintaining this file
 
 Whenever you make progress on the project, update the **Next steps** and **TODO** lists above. When you commit changes that complete an item, mark it as done with an `x` (e.g. `- [x]`). Add any new tasks or notes that future agents should be aware of. Keep this file concise and focused on actionable items.
