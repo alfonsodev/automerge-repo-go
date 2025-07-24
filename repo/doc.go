@@ -6,7 +6,9 @@ package repo
 // persisted to disk using FsStore and synchronised with remote peers using
 // RepoHandle and network connectors. Documents can also be accessed through
 // DocumentHandle which exposes helper methods and a simple change
-// notification mechanism.
+// notification mechanism. When created via Repo methods the handle
+// will automatically persist changes using the repo's store if one is
+// configured.
 //
 // A simple TCP connector and WebSocket helpers are available to establish
 // connections between repositories. Messages exchanged between peers use the
