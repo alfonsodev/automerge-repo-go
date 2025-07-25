@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Automerge-Repo Go + Echo Demo</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        padding: 2em;
+        background-color: #f8f9fa;
+        color: #212529;
+      }
+      #root {
+        max-width: 600px;
+        margin: auto;
+        background: white;
+        padding: 2em;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        color: #007bff;
+      }
+      #status {
+        font-style: italic;
+        color: #6c757d;
+        margin-bottom: 1em;
+      }
+      pre {
+        background-color: #e9ecef;
+        padding: 1em;
+        border-radius: 4px;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+      }
+      button {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 15px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 1em;
+      }
+      button:hover {
+        background-color: #0056b3;
+      }
+    </style>
+    <!--
+      An import map allows us to use "bare module specifiers" like in Node.js.
+      The browser will resolve "@automerge/automerge-repo" to the full CDN URL.
+    -->
+
+    <script type="importmap">
+      {
+        "imports": {
+          "@automerge/automerge-repo": "https://cdn.jsdelivr.net/npm/@automerge/automerge-repo@1.1.5/dist/bundle.min.js"
+        }
+      }
+    </script>
+    <script type="module" crossorigin src="./index.js"></script>
+    <link rel="modulepreload" crossorigin href="./main.js">
+  </head>
+  <body>
+    <div id="root">
+      <h1>Automerge-Repo Go + Echo Demo</h1>
+      <div id="status">Connecting...</div>
+      <p>
+        This page is connected to a Go backend. Open this page in two browser
+        windows to see changes sync in real-time.
+      </p>
+      <h3>Document Content:</h3>
+      <pre id="document">{}</pre>
+      <button id="updateButton">Update Timestamp</button>
+    </div>
+    <!-- Our application logic, now loaded as a module -->
+  </body>
+</html>

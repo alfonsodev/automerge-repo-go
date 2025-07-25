@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/c-bata/go-prompt"
-	"github.com/example/automerge-repo-go/repo"
+	"github.com/automerge/automerge-repo-go/repo"
 	automerge "github.com/automerge/automerge-go"
 )
 

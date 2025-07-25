@@ -66,6 +66,76 @@ upgrade so repositories can communicate through standard HTTP servers or
 browsers. `DialWebSocket` also requires a `context.Context` for applying
 timeouts.
 
+### Echo Web Framework Integration
+
+For easy integration with the [Echo](https://echo.labstack.com/) web framework, you can use the provided handler in the `adapters/echo` package. This handler upgrades HTTP connections to WebSockets and connects them to the Automerge repo.
+
+Here is a complete example of a simple Echo server that uses the handler:
+
+```go
+package main
+
+import (
+	"context"
+	"log"
+
+	"github.com/automerge/automerge-repo-go/adapters/echo"
+	"github.com/automerge/automerge-repo-go/repo"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
+)
+
+func main() {
+	// Create a new Automerge repo.
+	r := repo.New()
+
+	// Create a handle for the repo.
+	handle := repo.NewRepoHandle(r)
+
+	// Run the repo in the background.
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case msg := <-handle.Inbox:
+				// In a real application, you would handle incoming messages here.
+				log.Printf("received message: %+v", msg)
+			}
+		}
+	}()
+
+	// Create a new Echo instance.
+	e := echo.New()
+	e.Use(middleware.Logger())
+	e.Use(middleware.Recover())
+
+	// Add the Automerge repo WebSocket handler.
+	e.GET("/ws", echo.AutomergeRepoHandler(handle))
+
+	// Start the server.
+	e.Logger.Fatal(e.Start(":1323"))
+}
+```
+
+#### Runnable Demo
+
+A complete, runnable demo of this integration with a vanilla JavaScript frontend can be found in the `examples/echo-vanilla-js` directory. To run it:
+
+1.  Navigate to the example directory:
+    ```bash
+    cd examples/echo-vanilla-js
+    ```
+2.  Run the Go server:
+    ```bash
+    go run main.go
+    ```
+3.  Open your browser to [http://localhost:1323](http://localhost:1323).
+
+You can open the page in multiple browser tabs or windows to see changes sync in real-time.
+
 ## Building
 
 This project uses Go modules. To download dependencies and build run:
@@ -91,7 +161,7 @@ Linux, macOS and Windows using the latest Go releases.
 
 ## Documentation
 
-The full documentation for the `repo` package is available on [pkg.go.dev](https://pkg.go.dev/github.com/example/automerge-repo-go/repo).
+The full documentation for the `repo` package is available on [pkg.go.dev](https://pkg.go.dev/github.com/automerge/automerge-repo-go/repo).
 
 You can also view the documentation locally using the `godoc` tool.
 If you don't have `godoc` installed, you can get it by running:
@@ -105,7 +175,7 @@ Once installed, run the following command in the root of the repository to start
 godoc -http=:6060
 ```
 
-Then, open your browser to [http://localhost:6060/pkg/github.com/example/automerge-repo-go/repo](http://localhost:6060/pkg/github.com/example/automerge-repo-go/repo).
+Then, open your browser to [http://localhost:6060/pkg/github.com/automerge/automerge-repo-go/repo](http://localhost:6060/pkg/github.com/automerge/automerge-repo-go/repo).
 
 ## Release process
 
