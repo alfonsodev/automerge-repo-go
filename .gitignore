@@ -13,3 +13,5 @@ bin/
 
 cmd/example/data/ data/
 data/
+node_modules/
+.specstory/
