@@ -5,8 +5,8 @@ import (
 	"log"
 	"net/http"
 
-	automerge_echo "github.com/automerge/automerge-repo-go/adapters/echo"
-	"github.com/automerge/automerge-repo-go/repo"
+	automerge_echo "github.com/alfonsodev/automerge-repo-go/adapters/echo"
+	"github.com/alfonsodev/automerge-repo-go/repo"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )

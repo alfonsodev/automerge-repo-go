@@ -21,12 +21,20 @@ const repo = new Repo({
   sharePolicy: async (peerId, docId) => true,
 });
 
-// 2. Get a handle to a document.
-// If the document doesn't exist, it will be created.
-const docUrl = "automerge:9k54321Abcde";
-const handle = repo.find(docUrl);
+// 2. Determine the document ID from the window's hash.
+//    If no hash is present, generate a new UUID, set the hash, and reload.
+let docId = window.location.hash.substring(1);
 
-statusDiv.textContent = "Repo initialized. Waiting for document...";
+if (!docId) {
+    docId = crypto.randomUUID();
+    window.location.hash = docId;
+}
+
+const handle = repo.find(`automerge:${docId}`);
+
+statusDiv.textContent = `Repo initialized. Document ID: ${docId}`;
+
+
 
 // 3. Register a listener for document changes.
 handle.on("change", ({ doc }) => {

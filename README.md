@@ -32,10 +32,10 @@ go run ./cmd/example <command>
 
 Available commands are:
 
-* `new` - create a new document and print its ID
-* `list` - list stored document IDs
-* `set <id> <key> <value>` - set a key/value pair in a document
-* `get <id> <key>` - print a value from a document
+- `new` - create a new document and print its ID
+- `list` - list stored document IDs
+- `set <id> <key> <value>` - set a key/value pair in a document
+- `get <id> <key>` - print a value from a document
 
 ### Networking example
 
@@ -79,8 +79,8 @@ import (
 	"context"
 	"log"
 
-	"github.com/automerge/automerge-repo-go/adapters/echo"
-	"github.com/automerge/automerge-repo-go/repo"
+	"github.com/alfonsodev/automerge-repo-go/adapters/echo"
+	"github.com/alfonsodev/automerge-repo-go/repo"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
@@ -158,24 +158,26 @@ All pushes and pull requests are validated by a GitHub Actions workflow defined
 in `.github/workflows/go.yml`. The workflow runs `go vet` and `go test` on
 Linux, macOS and Windows using the latest Go releases.
 
-
 ## Documentation
 
-The full documentation for the `repo` package is available on [pkg.go.dev](https://pkg.go.dev/github.com/automerge/automerge-repo-go/repo).
+The full documentation for the `repo` package is available on [pkg.go.dev](https://pkg.go.dev/github.com/alfonsodev/automerge-repo-go/repo).
 
 You can also view the documentation locally using the `godoc` tool.
 If you don't have `godoc` installed, you can get it by running:
+
 ```bash
 go install golang.org/x/tools/cmd/godoc@latest
 ```
-*Note: Ensure that your Go bin directory (e.g., `$GOPATH/bin` or `$HOME/go/bin`) is in your system's `PATH`.*
+
+_Note: Ensure that your Go bin directory (e.g., `$GOPATH/bin` or `$HOME/go/bin`) is in your system's `PATH`._
 
 Once installed, run the following command in the root of the repository to start the documentation server:
+
 ```bash
 godoc -http=:6060
 ```
 
-Then, open your browser to [http://localhost:6060/pkg/github.com/automerge/automerge-repo-go/repo](http://localhost:6060/pkg/github.com/automerge/automerge-repo-go/repo).
+Then, open your browser to [http://localhost:6060/pkg/github.com/alfonsodev/automerge-repo-go/repo](http://localhost:6060/pkg/github.com/alfonsodev/automerge-repo-go/repo).
 
 ## Release process
 

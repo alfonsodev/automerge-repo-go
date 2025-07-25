@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/automerge/automerge-repo-go/repo"
+	"github.com/alfonsodev/automerge-repo-go/repo"
 	"github.com/google/uuid"
 )
 

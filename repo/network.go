@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"sync"
 	"time"
 
@@ -19,6 +20,7 @@ const (
 	Incoming ConnDirection = iota
 	Outgoing
 )
+
 
 type handshakeMessage struct {
 	Type     string `cbor:"type"`
@@ -49,6 +51,7 @@ func Handshake(ctx context.Context, rw io.ReadWriter, id RepoID, dir ConnDirecti
 		if resp.Type != "peer" {
 			return RepoID{}, fmt.Errorf("unexpected message %q", resp.Type)
 		}
+		log.Printf("The user is sending UUID: %s", resp.SenderID)
 		remote, err := uuid.Parse(resp.SenderID)
 		if err != nil {
 			return RepoID{}, err
@@ -62,6 +65,7 @@ func Handshake(ctx context.Context, rw io.ReadWriter, id RepoID, dir ConnDirecti
 		if req.Type != "join" {
 			return RepoID{}, fmt.Errorf("unexpected message %q", req.Type)
 		}
+		log.Printf("The user is sending UUID: %s", req.SenderID)
 		if err := enc.Encode(handshakeMessage{Type: "peer", SenderID: id.String()}); err != nil {
 			return RepoID{}, err
 		}
@@ -74,6 +78,7 @@ func Handshake(ctx context.Context, rw io.ReadWriter, id RepoID, dir ConnDirecti
 		return RepoID{}, fmt.Errorf("invalid direction")
 	}
 }
+
 
 // handshakePipe is a helper for tests that connects two sides of a net.Pipe and
 // runs Handshake concurrently.

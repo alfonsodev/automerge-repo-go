@@ -2,6 +2,7 @@ package repo
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/fxamacker/cbor/v2"
 	"github.com/google/uuid"
@@ -51,6 +52,7 @@ func DecodeRepoMessage(data []byte) (RepoMessage, error) {
 	if wire.Type != "sync" && wire.Type != "ephemeral" {
 		return RepoMessage{}, fmt.Errorf("invalid RepoMessage type %q", wire.Type)
 	}
+	log.Printf("The user is sending UUID: %s", wire.DocumentID)
 	from, err := uuid.Parse(wire.SenderID)
 	if err != nil {
 		return RepoMessage{}, err
@@ -71,3 +73,4 @@ func DecodeRepoMessage(data []byte) (RepoMessage, error) {
 		Message:    wire.Message,
 	}, nil
 }
+

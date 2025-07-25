@@ -15,3 +15,4 @@ cmd/example/data/ data/
 data/
 node_modules/
 .specstory/
+examples/echo-vanilla-js/public/

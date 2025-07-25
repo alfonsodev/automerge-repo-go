@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/automerge/automerge-repo-go/repo"
+	"github.com/alfonsodev/automerge-repo-go/repo"
 	automerge "github.com/automerge/automerge-go"
 )
 
