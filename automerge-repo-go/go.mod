@@ -9,3 +9,5 @@ require (
 )
 
 require github.com/x448/float16 v0.8.4 // indirect
+
+replace github.com/automerge/automerge-repo-storage-fs-go => ../automerge-repo-storage-fs-go

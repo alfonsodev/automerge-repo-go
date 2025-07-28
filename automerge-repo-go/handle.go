@@ -315,7 +315,7 @@ func (h *RepoHandle) handleSyncMessage(remote RepoID, msg RepoMessage) {
 			return
 		}
 		// create empty document if not present
-		doc = &Document{ID: msg.DocumentID, doc: automerge.New()}
+		doc = &Document{ID: msg.DocumentID, Doc: automerge.New()}
 		h.Repo.docs[msg.DocumentID] = doc
 	}
 	state := pi.syncStates[msg.DocumentID]

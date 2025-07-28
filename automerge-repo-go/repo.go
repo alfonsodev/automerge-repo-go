@@ -17,7 +17,7 @@ type RepoID = uuid.UUID
 // Document represents a single Automerge document.
 type Document struct {
 	ID  DocumentID
-	doc *automerge.Doc
+	Doc *automerge.Doc
 
 	lastHeads           []automerge.ChangeHash
 	changesSinceCompact int
@@ -28,15 +28,15 @@ type Document struct {
 
 // NewSyncState returns a sync state for exchanging changes of this document with a peer.
 func (d *Document) NewSyncState() *automerge.SyncState {
-	if d.doc == nil {
-		d.doc = automerge.New()
+	if d.Doc == nil {
+		d.Doc = automerge.New()
 	}
-	return automerge.NewSyncState(d.doc)
+	return automerge.NewSyncState(d.Doc)
 }
 
 // ReceiveSyncMessage applies a sync message to the document using the given state.
 func (d *Document) ReceiveSyncMessage(state *automerge.SyncState, msg []byte) error {
-	state.Doc = d.doc
+	state.Doc = d.Doc
 	_, err := state.ReceiveMessage(msg)
 	if err == nil {
 		d.notifyWatchers()
@@ -46,7 +46,7 @@ func (d *Document) ReceiveSyncMessage(state *automerge.SyncState, msg []byte) er
 
 // GenerateSyncMessage produces the next sync message for the peer using the given state.
 func (d *Document) GenerateSyncMessage(state *automerge.SyncState) ([]byte, bool) {
-	state.Doc = d.doc
+	state.Doc = d.Doc
 	sm, valid := state.GenerateMessage()
 	if !valid {
 		return nil, false
@@ -56,13 +56,13 @@ func (d *Document) GenerateSyncMessage(state *automerge.SyncState) ([]byte, bool
 
 // Set assigns a value in the document.
 func (d *Document) Set(key string, value interface{}) error {
-	if d.doc == nil {
-		d.doc = automerge.New()
+	if d.Doc == nil {
+		d.Doc = automerge.New()
 	}
-	if err := d.doc.RootMap().Set(key, value); err != nil {
+	if err := d.Doc.RootMap().Set(key, value); err != nil {
 		return err
 	}
-	_, err := d.doc.Commit("set")
+	_, err := d.Doc.Commit("set")
 	if err == nil {
 		d.changesSinceCompact++
 		d.notifyWatchers()
@@ -72,10 +72,10 @@ func (d *Document) Set(key string, value interface{}) error {
 
 // Get retrieves a value from the document.
 func (d *Document) Get(key string) (interface{}, bool) {
-	if d.doc == nil {
+	if d.Doc == nil {
 		return nil, false
 	}
-	v, err := automerge.As[interface{}](d.doc.RootMap().Get(key))
+	v, err := automerge.As[interface{}](d.Doc.RootMap().Get(key))
 	if err != nil {
 		return nil, false
 	}
@@ -84,16 +84,16 @@ func (d *Document) Get(key string) (interface{}, bool) {
 
 // Map returns the document's contents as a map.
 func (d *Document) Map() (map[string]interface{}, error) {
-	if d.doc == nil {
+	if d.Doc == nil {
 		return nil, nil
 	}
 	m := make(map[string]interface{})
-	keys, err := d.doc.RootMap().Keys()
+	keys, err := d.Doc.RootMap().Keys()
 	if err != nil {
 		return nil, err
 	}
 	for _, k := range keys {
-		v, err := d.doc.RootMap().Get(k)
+		v, err := d.Doc.RootMap().Get(k)
 		if err != nil {
 			return nil, err
 		}
@@ -109,7 +109,7 @@ func (d *Document) Map() (map[string]interface{}, error) {
 type Repo struct {
 	ID          RepoID
 	docs        map[DocumentID]*Document
-	store       *FsStore
+	store       StorageAdapter
 	sharePolicy SharePolicy
 }
 
@@ -123,7 +123,7 @@ func New() *Repo {
 }
 
 // NewWithStore creates a repository that will persist documents using the provided store.
-func NewWithStore(store *FsStore) *Repo {
+func NewWithStore(store StorageAdapter) *Repo {
 	r := New()
 	r.store = store
 	return r
@@ -131,7 +131,7 @@ func NewWithStore(store *FsStore) *Repo {
 
 // NewDoc creates a new document within the repository and returns it.
 func (r *Repo) NewDoc() *Document {
-	doc := &Document{ID: uuid.New(), doc: automerge.New()}
+	doc := &Document{ID: uuid.New(), Doc: automerge.New()}
 	r.docs[doc.ID] = doc
 	return doc
 }
@@ -189,4 +189,9 @@ func (r *Repo) LoadDoc(id DocumentID) (*Document, error) {
 func (r *Repo) WithSharePolicy(sp SharePolicy) *Repo {
 	r.sharePolicy = sp
 	return r
+}
+
+// ClearDocs removes all documents from the repo. This is useful for testing.
+func (r *Repo) ClearDocs() {
+	r.docs = make(map[DocumentID]*Document)
 }

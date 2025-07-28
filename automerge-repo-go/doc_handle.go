@@ -45,17 +45,17 @@ func (h *DocumentHandle) Changed() <-chan struct{} {
 // This is useful for reading data from the document.
 func (h *DocumentHandle) WithDoc(f func(*automerge.Doc)) {
 	h.doc.ensureDoc()
-	f(h.doc.doc)
+	f(h.doc.Doc)
 }
 
 // WithDocMut runs f with the document and commits the result. A change
 // notification is sent if the document was modified.
 func (h *DocumentHandle) WithDocMut(f func(*automerge.Doc) error) error {
 	h.doc.ensureDoc()
-	if err := f(h.doc.doc); err != nil {
+	if err := f(h.doc.Doc); err != nil {
 		return err
 	}
-	if _, err := h.doc.doc.Commit("update"); err != nil {
+	if _, err := h.doc.Doc.Commit("update"); err != nil {
 		return err
 	}
 	h.doc.notifyWatchers()
@@ -80,8 +80,8 @@ func (r *Repo) GetDocHandle(id DocumentID) (*DocumentHandle, bool) {
 // --- internal helpers on Document ---
 
 func (d *Document) ensureDoc() {
-	if d.doc == nil {
-		d.doc = automerge.New()
+	if d.Doc == nil {
+		d.Doc = automerge.New()
 	}
 }
 

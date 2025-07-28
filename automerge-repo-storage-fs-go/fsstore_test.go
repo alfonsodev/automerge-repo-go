@@ -1,4 +1,4 @@
-package repo
+package storage_test
 
 import (
 	"os"
@@ -6,15 +6,17 @@ import (
 	"testing"
 
 	automerge "github.com/automerge/automerge-go"
+	"github.com/automerge/automerge-repo-go"
+	"github.com/automerge/automerge-repo-storage-fs-go"
 	"github.com/google/uuid"
 )
 
 func TestFsStoreSaveLoadList(t *testing.T) {
 	dir := t.TempDir()
-	store := &FsStore{Dir: dir}
+	store := &storage.FsStore{Dir: dir}
 
 	// create document
-	doc := &Document{ID: uuid.New(), doc: automerge.New()}
+	doc := &repo.Document{ID: uuid.New(), Doc: automerge.New()}
 	if err := doc.Set("foo", "bar"); err != nil {
 		t.Fatalf("Set failed: %v", err)
 	}

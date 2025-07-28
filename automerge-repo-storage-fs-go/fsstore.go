@@ -1,4 +1,4 @@
-package repo
+package storage
 
 import (
 	"errors"
@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	automerge "github.com/automerge/automerge-go"
+	"github.com/automerge/automerge-repo-go"
 	"github.com/google/uuid"
 )
 
@@ -19,14 +20,14 @@ type FsStore struct {
 
 // Save appends any new changes from the document to a file on disk.
 // If the file does not exist, it creates a new one with a full snapshot of the document.
-func (s *FsStore) Save(doc *Document) error {
+func (s *FsStore) Save(doc *repo.Document) error {
 	if err := os.MkdirAll(s.Dir, 0o755); err != nil {
 		return err
 	}
 	path := filepath.Join(s.Dir, fmt.Sprintf("%s.automerge", doc.ID))
 
-	if doc.doc == nil {
-		doc.doc = automerge.New()
+	if doc.Doc == nil {
+		doc.Doc = automerge.New()
 	}
 
 	// If the file doesn't exist, save the full document.
@@ -34,7 +35,7 @@ func (s *FsStore) Save(doc *Document) error {
 		return s.Compact(doc)
 	}
 
-	data := doc.doc.SaveIncremental()
+	data := doc.Doc.SaveIncremental()
 
 	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
@@ -50,21 +51,21 @@ func (s *FsStore) Save(doc *Document) error {
 }
 
 // Compact writes the full document to disk, replacing any incremental saves.
-func (s *FsStore) Compact(doc *Document) error {
+func (s *FsStore) Compact(doc *repo.Document) error {
 	if err := os.MkdirAll(s.Dir, 0o755); err != nil {
 		return err
 	}
 	path := filepath.Join(s.Dir, fmt.Sprintf("%s.automerge", doc.ID))
-	if doc.doc == nil {
-		doc.doc = automerge.New()
+	if doc.Doc == nil {
+		doc.Doc = automerge.New()
 	}
-	data := doc.doc.Save()
+	data := doc.Doc.Save()
 	return os.WriteFile(path, data, 0o644)
 }
 
 // Load reads a document from disk. It can load both full snapshots and files
 // with incremental changes appended.
-func (s *FsStore) Load(id DocumentID) (*Document, error) {
+func (s *FsStore) Load(id repo.DocumentID) (*repo.Document, error) {
 	path := filepath.Join(s.Dir, fmt.Sprintf("%s.automerge", id))
 	b, err := os.ReadFile(path)
 	if err != nil {
@@ -77,12 +78,12 @@ func (s *FsStore) Load(id DocumentID) (*Document, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Document{ID: id, doc: d, lastHeads: d.Heads()}, nil
+	return &repo.Document{ID: id, Doc: d}, nil
 }
 
 // List returns all document IDs currently stored on disk.
-func (s *FsStore) List() ([]DocumentID, error) {
-	var ids []DocumentID
+func (s *FsStore) List() ([]repo.DocumentID, error) {
+	var ids []repo.DocumentID
 	files, err := os.ReadDir(s.Dir)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {

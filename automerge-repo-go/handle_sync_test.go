@@ -21,7 +21,7 @@ func TestRepoHandleSync(t *testing.T) {
 	if err := doc1.Set("k", "v"); err != nil {
 		t.Fatalf("set err: %v", err)
 	}
-	doc2 := &Document{ID: doc1.ID, doc: automerge.New()}
+	doc2 := &Document{ID: doc1.ID, Doc: automerge.New()}
 	h2.Repo.docs[doc1.ID] = doc2
 
 	if err := h1.SyncDocument(h2.Repo.ID, doc1.ID); err != nil {

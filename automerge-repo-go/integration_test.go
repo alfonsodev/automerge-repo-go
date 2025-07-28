@@ -46,7 +46,7 @@ func TestDirectSync(t *testing.T) {
 	// Ensure h2 has the document (it should be created on first sync message)
 	doc2, _ := h2.Repo.GetDoc(doc1.ID)
 	if doc2 == nil {
-		doc2 = &Document{ID: doc1.ID, doc: automerge.New()}
+		doc2 = &Document{ID: doc1.ID, Doc: automerge.New()}
 		h2.Repo.docs[doc1.ID] = doc2
 	}
 
