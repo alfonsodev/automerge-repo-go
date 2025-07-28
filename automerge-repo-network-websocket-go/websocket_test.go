@@ -1,4 +1,4 @@
-package repo
+package network_test
 
 import (
 	"context"
@@ -8,18 +8,20 @@ import (
 	"testing"
 	"time"
 
+	"github.com/automerge/automerge-repo-go"
+	"github.com/automerge/automerge-repo-network-websocket-go"
 	"github.com/google/uuid"
 )
 
 func TestWebSocketHandshake(t *testing.T) {
-	serverRepo := New()
-	clientRepo := New()
+	serverRepo := repo.New()
+	clientRepo := repo.New()
 
-	var remoteFromServer RepoID
+	var remoteFromServer repo.RepoID
 	var wsErr error
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		conn, remote, err := AcceptWebSocket(w, r, serverRepo.ID)
+		conn, remote, err := network.AcceptWebSocket(w, r, serverRepo.ID)
 		if err != nil {
 			wsErr = err
 			return
@@ -33,7 +35,7 @@ func TestWebSocketHandshake(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	conn, remoteFromClient, err := DialWebSocket(ctx, wsURL, clientRepo.ID)
+	conn, remoteFromClient, err := network.DialWebSocket(ctx, wsURL, clientRepo.ID)
 	if err != nil {
 		t.Fatalf("dial error: %v", err)
 	}
@@ -49,14 +51,14 @@ func TestWebSocketHandshake(t *testing.T) {
 }
 
 func TestWSConnSendRecvMessage(t *testing.T) {
-	serverRepo := New()
-	clientRepo := New()
+	serverRepo := repo.New()
+	clientRepo := repo.New()
 
-	var received RepoMessage
+	var received repo.RepoMessage
 	done := make(chan struct{})
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		conn, _, err := AcceptWebSocket(w, r, serverRepo.ID)
+		conn, _, err := network.AcceptWebSocket(w, r, serverRepo.ID)
 		if err != nil {
 			t.Errorf("accept error: %v", err)
 			close(done)
@@ -75,13 +77,13 @@ func TestWSConnSendRecvMessage(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	conn, _, err := DialWebSocket(ctx, wsURL, clientRepo.ID)
+	conn, _, err := network.DialWebSocket(ctx, wsURL, clientRepo.ID)
 	if err != nil {
 		t.Fatalf("dial error: %v", err)
 	}
 	defer conn.Close()
 
-	msg := RepoMessage{
+	msg := repo.RepoMessage{
 		Type:       "sync",
 		FromRepoID: clientRepo.ID,
 		ToRepoID:   serverRepo.ID,

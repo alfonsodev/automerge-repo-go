@@ -1,8 +1,9 @@
-package repo
+package network
 
 import (
 	"io"
 
+	"github.com/automerge/automerge-repo-go"
 	"github.com/gorilla/websocket"
 )
 
@@ -19,7 +20,7 @@ func NewWSConnAdapter(conn *websocket.Conn) *WSConnAdapter {
 }
 
 // SendMessage sends a message over the WebSocket connection.
-func (c *WSConnAdapter) SendMessage(msg RepoMessage) error {
+func (c *WSConnAdapter) SendMessage(msg repo.RepoMessage) error {
 	data, err := msg.Encode()
 	if err != nil {
 		return err
@@ -28,12 +29,12 @@ func (c *WSConnAdapter) SendMessage(msg RepoMessage) error {
 }
 
 // RecvMessage receives a message from the WebSocket connection.
-func (c *WSConnAdapter) RecvMessage() (RepoMessage, error) {
+func (c *WSConnAdapter) RecvMessage() (repo.RepoMessage, error) {
 	_, data, err := c.conn.ReadMessage()
 	if err != nil {
-		return RepoMessage{}, err
+		return repo.RepoMessage{}, err
 	}
-	return DecodeRepoMessage(data)
+	return repo.DecodeRepoMessage(data)
 }
 
 // Close closes the WebSocket connection.
