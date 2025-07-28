@@ -1,6 +1,0 @@
-#!/usr/bin/env bash
-set -eoux pipefail
-
-cargo build --all-features
-
-RUST_LOG=error cargo test --all-features

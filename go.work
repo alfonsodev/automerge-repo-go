@@ -1,0 +1,7 @@
+go 1.24.5
+
+use (
+	./automerge-repo-go
+	./automerge-repo-network-websocket-go
+	./automerge-repo-storage-fs-go
+)
