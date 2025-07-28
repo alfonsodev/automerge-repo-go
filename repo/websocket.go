@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/fxamacker/cbor/v2"
-	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 )
 
@@ -104,11 +103,7 @@ func DialWebSocket(ctx context.Context, u string, id RepoID) (*WSConn, RepoID, e
 		ws.Close()
 		return nil, RepoID{}, fmt.Errorf("unexpected message %q", resp.Type)
 	}
-	remote, err := uuid.Parse(resp.SenderID)
-	if err != nil {
-		ws.Close()
-		return nil, RepoID{}, err
-	}
+	remote := parseRepoID(resp.SenderID)
 	return ws, remote, nil
 }
 
@@ -135,10 +130,6 @@ func AcceptWebSocket(w http.ResponseWriter, r *http.Request, id RepoID) (*WSConn
 		ws.Close()
 		return nil, RepoID{}, err
 	}
-	remote, err := uuid.Parse(req.SenderID)
-	if err != nil {
-		ws.Close()
-		return nil, RepoID{}, err
-	}
+	remote := parseRepoID(req.SenderID)
 	return ws, remote, nil
 }

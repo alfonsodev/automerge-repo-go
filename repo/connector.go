@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/fxamacker/cbor/v2"
-	"github.com/google/uuid"
 )
 
 // LPConn wraps a connection and exchanges length-prefixed CBOR messages.
@@ -110,10 +109,7 @@ func Connect(ctx context.Context, conn net.Conn, id RepoID, dir ConnDirection) (
 		if resp.Type != "peer" {
 			return nil, RepoID{}, fmt.Errorf("unexpected message %q", resp.Type)
 		}
-		remote, err := uuid.Parse(resp.SenderID)
-		if err != nil {
-			return nil, RepoID{}, err
-		}
+		remote := parseRepoID(resp.SenderID)
 		return lp, remote, nil
 	case Incoming:
 		var req handshakeMessage
@@ -126,10 +122,7 @@ func Connect(ctx context.Context, conn net.Conn, id RepoID, dir ConnDirection) (
 		if err := lp.Send(handshakeMessage{Type: "peer", SenderID: id.String()}); err != nil {
 			return nil, RepoID{}, err
 		}
-		remote, err := uuid.Parse(req.SenderID)
-		if err != nil {
-			return nil, RepoID{}, err
-		}
+		remote := parseRepoID(req.SenderID)
 		return lp, remote, nil
 	default:
 		return nil, RepoID{}, fmt.Errorf("invalid direction")

@@ -26,15 +26,13 @@ const repo = new Repo({
 let docId = window.location.hash.substring(1);
 
 if (!docId) {
-    docId = crypto.randomUUID();
-    window.location.hash = docId;
+  docId = crypto.randomUUID();
+  window.location.hash = docId;
 }
 
 const handle = repo.find(`automerge:${docId}`);
 
 statusDiv.textContent = `Repo initialized. Document ID: ${docId}`;
-
-
 
 // 3. Register a listener for document changes.
 handle.on("change", ({ doc }) => {
@@ -46,6 +44,8 @@ handle.on("change", ({ doc }) => {
 
 // 4. Set up the button to modify the document.
 updateButton.addEventListener("click", () => {
+  debugger;
+  console.log("Updating document...");
   if (!handle.isReady()) {
     alert("Document not ready yet. Please wait.");
     return;

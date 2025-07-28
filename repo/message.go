@@ -53,14 +53,8 @@ func DecodeRepoMessage(data []byte) (RepoMessage, error) {
 		return RepoMessage{}, fmt.Errorf("invalid RepoMessage type %q", wire.Type)
 	}
 	log.Printf("The user is sending UUID: %s", wire.DocumentID)
-	from, err := uuid.Parse(wire.SenderID)
-	if err != nil {
-		return RepoMessage{}, err
-	}
-	to, err := uuid.Parse(wire.TargetID)
-	if err != nil {
-		return RepoMessage{}, err
-	}
+	from := parseRepoID(wire.SenderID)
+	to := parseRepoID(wire.TargetID)
 	doc, err := uuid.Parse(wire.DocumentID)
 	if err != nil {
 		return RepoMessage{}, err

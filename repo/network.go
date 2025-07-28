@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/fxamacker/cbor/v2"
-	"github.com/google/uuid"
 )
 
 // ConnDirection indicates if we initiated a connection or accepted one.
@@ -52,10 +51,10 @@ func Handshake(ctx context.Context, rw io.ReadWriter, id RepoID, dir ConnDirecti
 			return RepoID{}, fmt.Errorf("unexpected message %q", resp.Type)
 		}
 		log.Printf("The user is sending UUID: %s", resp.SenderID)
-		remote, err := uuid.Parse(resp.SenderID)
-		if err != nil {
-			return RepoID{}, err
-		}
+		// Accept arbitrary peer identifiers. If it's not a UUID we map it to a
+		// deterministic UUID so the rest of the code can continue to use the
+		// uuid.UUID type.
+		remote := parseRepoID(resp.SenderID)
 		return remote, nil
 	case Incoming:
 		var req handshakeMessage
@@ -69,10 +68,7 @@ func Handshake(ctx context.Context, rw io.ReadWriter, id RepoID, dir ConnDirecti
 		if err := enc.Encode(handshakeMessage{Type: "peer", SenderID: id.String()}); err != nil {
 			return RepoID{}, err
 		}
-		remote, err := uuid.Parse(req.SenderID)
-		if err != nil {
-			return RepoID{}, err
-		}
+		remote := parseRepoID(req.SenderID)
 		return remote, nil
 	default:
 		return RepoID{}, fmt.Errorf("invalid direction")
